@@ -2,6 +2,7 @@ import firebaseConfig from '@/config/firebase';
 import {
   getFirestore,
   doc,
+  addDoc,
   setDoc,
   getDoc,
   collection,
@@ -14,11 +15,17 @@ import {
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
+
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 import { saveCurrentUser } from './localstorage';
+import { Medicine } from '@/types';
 
 const db = getFirestore(firebaseConfig);
 
 const obatCollection = 'obat';
+
+const storage = getStorage();
 
 export const addUser = async (collection: string, id: string, data: {}) => {
   let result = null,
@@ -97,7 +104,8 @@ export const unsubscribeFromMedicinesChanges = (unsubscribe: Unsubscribe) => {
 export const addMedicine = async (
   namaObat: string,
   harga: string,
-  stock: number
+  stock: number,
+  imgFile: File | null
 ) => {
   let result: String | any = null,
     error: Error | any = null;
@@ -116,12 +124,32 @@ export const addMedicine = async (
         return (error = new Error('Data obat sudah ada.'));
       }
 
-      const newObatDocRef = doc(obatCollectionRef, namaObat);
+      let imageUrl = null;
+
+      const obatData = {
+        id: '',
+        medicine_name: namaObat,
+        price: harga,
+        stock,
+        image: imageUrl,
+      };
+      const newMedicineRef = await addDoc(obatCollectionRef, obatData);
+
+      const newObatID = newMedicineRef.id;
+
+      if (imgFile) {
+        const imageRef = ref(storage, `medicine/${newObatID}/${imgFile.name}`);
+        await uploadBytes(imageRef, imgFile);
+
+        imageUrl = await getDownloadURL(imageRef);
+      }
+
       await setDoc(
-        newObatDocRef,
-        { medicine_name: namaObat, price: harga, stock },
+        newMedicineRef,
+        { ...obatData, id: newObatID, image: imageUrl },
         { merge: true }
       );
+
       result = 'Data obat berhasil ditambahkan.';
     });
   } catch (err) {
@@ -132,11 +160,11 @@ export const addMedicine = async (
   return { result, error };
 };
 
-export const deleteMedicine = async (namaObat: string) => {
+export const deleteMedicine = async (idObat: string) => {
   let result: string | any = null,
     error: Error | any = null;
   try {
-    const obatDocRef = doc(collection(db, obatCollection), namaObat);
+    const obatDocRef = doc(collection(db, obatCollection), idObat);
     await deleteDoc(obatDocRef);
     result = 'Data obat berhasil dihapus';
   } catch (err) {
@@ -147,12 +175,31 @@ export const deleteMedicine = async (namaObat: string) => {
   return { result, error };
 };
 
-export const updateMedicine = async (id: string, updatedData: {}) => {
+export const updateMedicine = async (
+  id: string,
+  updatedData: Medicine,
+  imgFile: File | null
+) => {
   let result: String | any = null,
     error: Error | any = null;
+
   try {
     const obatDocRef = doc(db, obatCollection, id);
-    await updateDoc(obatDocRef, updatedData);
+
+    if (imgFile) {
+      const imageRef = ref(storage, `medicine/${id}/${imgFile.name}`);
+      await uploadBytes(imageRef, imgFile);
+
+      const imageUrl = await getDownloadURL(imageRef);
+      updatedData.image = imageUrl;
+    }
+
+    const convertedData: { [key: string]: any } = {};
+    Object.entries(updatedData).forEach(([key, value]) => {
+      convertedData[key] = value;
+    });
+
+    await updateDoc(obatDocRef, convertedData);
     result = `Data obat berhasil diperbarui`;
   } catch (err) {
     error = err;

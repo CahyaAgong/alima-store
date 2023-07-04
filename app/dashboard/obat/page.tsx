@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { isEqual } from 'lodash';
 
 import {
   getMedicines,
@@ -15,45 +14,53 @@ import {
   subscribeToMedicinesChanges,
   unsubscribeFromMedicinesChanges,
 } from '@/actions/firestore';
-import { logOut } from '@/actions/auth';
 
-import { useAuthContext } from '@/context/AuthContext';
-
-import { Navbar, Button } from '@/components';
+import { Button, FileUploader, SearchBar } from '@/components';
 import Modal from '@/components/Modal';
 import { Medicine } from '@/types';
 import { showAlert } from '@/components/SweetAlert';
 
 export default function Obat() {
-  const router = useRouter();
-  const userLogged = useAuthContext();
-
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [medicineId, setMeidicineId] = useState<string>('');
+  const [image, setImage] = useState<File | null>(null);
 
-  const [formValues, setFormValues] = useState({
-    namaObat: '',
-    harga: '',
+  const [formValues, setFormValues] = useState<Medicine>({
+    id: '',
+    medicine_name: '',
+    price: '',
     stock: 0,
+    image: null,
   });
-
-  let unsubscribe: (() => void) | undefined;
 
   const handleOpenModal = (
     editMode: boolean = false,
+    id: string = '',
     name: string = '',
     price: string = '',
-    stock: number = 0
+    stock: number = 0,
+    img: string | null = null
   ) => {
     setModalOpen(true);
     if (editMode) {
       setIsEdit(true);
-      setMeidicineId(name);
-      setFormValues({ namaObat: name, harga: price, stock: stock });
+      setMeidicineId(id);
+      setFormValues({ id: id, medicine_name: name, price, stock, image: img });
     }
+  };
+
+  const clearForm = () => {
+    setFormValues({
+      id: '',
+      medicine_name: '',
+      price: '',
+      stock: 0,
+      image: null,
+    });
+    setImage(null);
   };
 
   const handleCloseModal = () => {
@@ -63,8 +70,10 @@ export default function Obat() {
     setMeidicineId('');
   };
 
-  const clearForm = () => {
-    setFormValues({ namaObat: '', harga: '', stock: 0 });
+  const handleFileChange = (file: File | null) => {
+    if (file) {
+      setImage(file);
+    }
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,15 +88,15 @@ export default function Obat() {
     event.preventDefault();
     setLoading(true);
 
-    const { namaObat, harga, stock } = formValues;
+    const { medicine_name, price, stock } = formValues;
     if (isEdit) {
       handleUpdateMedicine(medicineId);
     } else {
-      handleAddMedicine(namaObat, harga, stock);
+      handleAddMedicine(medicine_name, price, stock);
     }
   };
 
-  const handleDeleteMedicine = (medicineName: string) => {
+  const handleDeleteMedicine = (medicineId: string) => {
     setLoading(true);
     const mySwal = withReactContent(Swal);
     mySwal
@@ -105,7 +114,7 @@ export default function Obat() {
       })
       .then(async res => {
         if (res.isConfirmed) {
-          const { result, error } = await deleteMedicine(medicineName);
+          const { result, error } = await deleteMedicine(medicineId);
           if (error) {
             mySwal.fire({
               title: 'Error',
@@ -134,7 +143,11 @@ export default function Obat() {
     harga: string,
     stock: number
   ) => {
-    const { result, error } = await addMedicine(namaObat, harga, stock);
+    if (!namaObat || !harga || !stock) {
+      showAlert('Error', 'form harus diisi semua', 'error');
+      return;
+    }
+    const { result, error } = await addMedicine(namaObat, harga, stock, image);
     if (error) {
       showAlert('Error', `terjadi error ${error}`);
       setModalOpen(true);
@@ -148,19 +161,21 @@ export default function Obat() {
     setLoading(false);
   };
 
-  const handleUpdateMedicine = async (medicineName: string) => {
-    const oldMedicineName = medicineName;
-    const updatedData = {
-      medicine_name: formValues.namaObat,
-      price: formValues.harga,
+  const handleUpdateMedicine = async (medicineId: string) => {
+    const updatedData: Medicine = {
+      id: medicineId,
+      medicine_name: formValues.medicine_name,
+      price: formValues.price,
       stock: formValues.stock,
+      image: formValues.image,
     };
     const { result, error } = await updateMedicine(
-      oldMedicineName,
-      updatedData
+      medicineId,
+      updatedData,
+      image
     );
     if (error) {
-      showAlert('Error', `terjadi error ${error}`);
+      showAlert('Error', error, 'error');
       setModalOpen(true);
       setLoading(false);
       return;
@@ -173,19 +188,16 @@ export default function Obat() {
   };
 
   useEffect(() => {
-    if (userLogged == null) {
-      router.push('/');
-      return;
-    }
     const fetchData = async () => {
       const { result, error } = await getMedicines('obat');
       if (error) {
-        console.error(error);
+        showAlert('error', error, 'error');
+        return;
       }
       setMedicines(result);
       const unsubscribe = subscribeToMedicinesChanges(
-        (updatedMedicines: any[]) => {
-          setMedicines(updatedMedicines);
+        (updatedMedicines: Medicine[]) => {
+          if (!loading) setMedicines(updatedMedicines);
         }
       );
 
@@ -195,37 +207,13 @@ export default function Obat() {
     };
 
     fetchData();
-  }, [userLogged]);
+  }, []);
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen'>
-      <Navbar handleClick={logOut} />
-
       <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
         <div className='flex flex-row space-x-5 w-full'>
-          <div className='relative w-[85%] group'>
-            <input
-              type='text'
-              className='w-full px-3 py-2 outline-none border border-[#D8CCF3] focus:border-[#5C25E7]'
-            />
-            <span className='absolute right-4 top-1/2 transform -translate-y-1/2'>
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                fill='none'
-                viewBox='0 0 24 24'
-                strokeWidth='1.8'
-                stroke='currentColor'
-                className='w-6 h-6 text-[#D8CCF3] group-focus-within:text-[#5C25E7] cursor-pointer'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  d='M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
-                />
-              </svg>
-            </span>
-          </div>
-
+          <SearchBar containerStyles='w-[85%]' searchIcon />
           <Button
             title={'TAMBAH OBAT'}
             containerStyles={`w-[15%] bg-[#5C25E7] text-white rounded-lg text-sm font-semibold`}
@@ -233,7 +221,7 @@ export default function Obat() {
           />
         </div>
 
-        <div className='w-full mt-12 bg-white rounded-lg px-3 py-0 min-h-[500px] max-h-[600px] overflow-hidden overflow-y-scroll'>
+        <div className='w-full mt-12 bg-white rounded-lg px-3 py-0 min-h-[500px] max-h-[600px] overflow-hidden overflow-y-scroll shadow-md'>
           <table
             className='table-fixed w-full text-black text-center '
             style={{ borderCollapse: 'separate', borderSpacing: '0 30px' }}
@@ -251,7 +239,7 @@ export default function Obat() {
             <tbody>
               {medicines.map(medicine => {
                 return (
-                  <tr key={medicine.medicine_name}>
+                  <tr key={medicine.id}>
                     <td>{medicine.medicine_name}</td>
                     <td>{medicine.price}</td>
                     <td>0</td>
@@ -263,18 +251,18 @@ export default function Obat() {
                         handleClick={() =>
                           handleOpenModal(
                             true,
+                            medicine.id,
                             medicine.medicine_name,
                             medicine.price,
-                            medicine.stock
+                            medicine.stock,
+                            medicine.image
                           )
                         }
                       />
                       <Button
                         title={`HAPUS`}
                         containerStyles={`bg-[#F03A3A] text-white rounded-lg text-sm font-normal px-4 py-2 ml-1`}
-                        handleClick={() =>
-                          handleDeleteMedicine(medicine.medicine_name)
-                        }
+                        handleClick={() => handleDeleteMedicine(medicine.id)}
                       />
                     </td>
                   </tr>
@@ -317,17 +305,17 @@ export default function Obat() {
                 >
                   <div className='mt-5 flex flex-col space-y-3'>
                     <label
-                      htmlFor='namaObat'
+                      htmlFor='medicine_name'
                       className='text-base text-black font-bold'
                     >
                       Nama Obat
                     </label>
                     <input
-                      name='namaObat'
+                      name='medicine_name'
                       type='text'
                       placeholder='Nama Obat'
                       className='outline-none w-full border border-[#5C25E7] rounded-lg px-3 py-2 text-sm text-black'
-                      value={formValues.namaObat}
+                      value={formValues.medicine_name}
                       onChange={handleChange}
                       required
                     />
@@ -335,17 +323,17 @@ export default function Obat() {
 
                   <div className='mt-5 flex flex-col space-y-3'>
                     <label
-                      htmlFor='harga'
+                      htmlFor='price'
                       className='text-base text-black font-bold'
                     >
                       Harga
                     </label>
                     <input
-                      name='harga'
-                      type='text'
+                      name='price'
+                      type='number'
                       placeholder='Rp xx.xxx'
                       className='outline-none w-full border border-[#5C25E7] rounded-lg px-3 py-2 text-sm text-black'
-                      value={formValues.harga}
+                      value={formValues.price}
                       onChange={handleChange}
                       required
                     />
@@ -366,6 +354,14 @@ export default function Obat() {
                       value={formValues.stock}
                       onChange={handleChange}
                       required
+                    />
+                  </div>
+
+                  <div className='w-full'>
+                    <FileUploader
+                      label={`Foto Obat`}
+                      onChange={handleFileChange}
+                      isRequired={false}
                     />
                   </div>
 

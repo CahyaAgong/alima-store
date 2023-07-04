@@ -11,10 +11,10 @@ export default function Navbar({ handleClick }: NavbarProps) {
             <Link href='/'>Beranda</Link>
           </li>
           <li>
-            <Link href='/dashboard/penjualan'>Penjualan</Link>
+            <Link href='/dashboard/penjualan/kasir'>Penjualan</Link>
           </li>
           <li>
-            <Link href='/dashboard/pengadaan'>Pengadaan</Link>
+            <Link href='/dashboard/pengadaan/rencana'>Pengadaan</Link>
           </li>
           <li>
             <Link href='/dashboard/obat'>Obat</Link>
