@@ -5,7 +5,7 @@ import { NavbarProps, User } from '@/types';
 import { getCookie } from '@/actions/cookie';
 
 export default function Navbar({ handleClick }: NavbarProps) {
-  const [currenUser, setCurrentUser] = useState<User | undefined>(undefined);
+  const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
 
   const getUserSession = async () => {
     const cookieUser: User | undefined = await getCookie('userSession');
@@ -29,21 +29,23 @@ export default function Navbar({ handleClick }: NavbarProps) {
           <li>
             <Link href='/dashboard/pengadaan/rencana'>Pengadaan</Link>
           </li>
-          <li>
-            <Link href='/dashboard/obat'>Obat</Link>
-          </li>
+          {currentUser?.role === 1 && (
+            <li>
+              <Link href='/dashboard/obat'>Obat</Link>
+            </li>
+          )}
         </ul>
       </div>
 
       <div className='flex flex-row space-x-3 items-center text-2xl cursor-pointer'>
         <Image
-          src={currenUser?.role === 1 ? '/pemilik.webp' : '/karyawan.webp'}
+          src={currentUser?.role === 1 ? '/pemilik.webp' : '/karyawan.webp'}
           width={56}
           height={56}
           alt='Image Profile'
           className='rounded-full'
         />
-        <span onClick={handleClick}>{currenUser?.username ?? 'No User'}</span>
+        <span onClick={handleClick}>{currentUser?.username ?? 'No User'}</span>
       </div>
     </nav>
   );
