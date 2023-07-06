@@ -8,3 +8,8 @@ export const formatCurrency = (value: number): string => {
 
   return formatter.format(value);
 };
+
+export const dispatchStorageEvent = () => {
+  //for trigger if storage has updated
+  window.dispatchEvent(new Event('storage'));
+};

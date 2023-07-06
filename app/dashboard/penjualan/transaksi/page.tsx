@@ -1,29 +1,60 @@
 'use client';
+import { useEffect, useState } from 'react';
 
+import { getDataPenjualan } from '@/actions/firestore';
 import { Button, CustomDatePicker, Modal, Tabs } from '@/components';
+import MedicineInCart from '@/components/MedicineInCart';
+import { showAlert } from '@/components/SweetAlert';
 import { penjualanMenus } from '@/constant/menus';
-import { useState } from 'react';
+import { SalesData } from '@/types';
+import { formatCurrency } from '@/utils/helper';
+import { format } from 'date-fns';
 
 const TransaksiPenjualan = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
-  const [startSelectedDate, setStartSelectedDate] = useState<Date | null>(
-    new Date()
-  );
-  const [endSelectedDate, setEndSelectedDate] = useState<Date | null>(
-    new Date()
-  );
+  const [startSelectedDate, setStartSelectedDate] = useState<Date>(new Date());
+  const [endSelectedDate, setEndSelectedDate] = useState<Date>(new Date());
 
-  const handleStartDateChange = (date: Date | null) => {
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [salesDetail, setSalesDetail] = useState<SalesData | null>(null);
+
+  const handleStartDateChange = (date: Date) => {
     setStartSelectedDate(date);
   };
 
-  const handleEndDateChange = (date: Date | null) => {
+  const handleEndDateChange = (date: Date) => {
     setEndSelectedDate(date);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
+    setSalesDetail(null);
   };
+
+  const handleDetailAction = (item: SalesData) => {
+    setModalOpen(true);
+    setSalesDetail(item);
+  };
+
+  useEffect(() => {
+    setIsLoading(true);
+    const fetchData = async () => {
+      const { result, error } = await getDataPenjualan(
+        startSelectedDate,
+        endSelectedDate
+      );
+
+      if (error) {
+        setIsLoading(false);
+        showAlert('Terjadi Kesalahan', error, 'error');
+        return;
+      }
+      setSalesData(result.data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, [startSelectedDate, endSelectedDate]);
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
@@ -45,14 +76,14 @@ const TransaksiPenjualan = () => {
               />
             </div>
           </div>
-          <div className='bg-white min-h-[500px] max-h-[600px] overflow-hidden overflow-y-scroll rounded-lg mt-3 pb-10 shadow-md p-6'>
+          <div className='bg-white min-h-[500px] max-h-[600px] overflow-hidden overflow-y-scroll rounded-lg mt-3 pb-10 shadow-md px-10 py-6'>
             <table className='table-fixed w-full text-center mt-5'>
               <thead>
                 <tr>
                   <th scope='col' className='px-6 py-3 w-auto'>
                     Tanggal
                   </th>
-                  <th scope='col' className='px-6 py-3 w-1/2 text-left'>
+                  <th scope='col' className='px-6 py-3 w-auto'>
                     ID Order
                   </th>
                   <th scope='col' className='px-6 py-3 w-auto'>
@@ -64,19 +95,35 @@ const TransaksiPenjualan = () => {
                 </tr>
               </thead>
 
-              <tbody className='font-semibold'>
-                <tr>
-                  <td className='px-6 py-4'>22 Juni 2023</td>
-                  <td className='px-6 py-4 text-left'>Amoxicillin</td>
-                  <td className='px-6 py-4'>6</td>
-                  <td className='px-6 py-4'>
-                    <Button
-                      title='Detail'
-                      containerStyles='bg-[#5C25E7] rounded-lg text-white px-3 py-2 w-full'
-                      handleClick={() => setModalOpen(true)}
-                    />
-                  </td>
-                </tr>
+              <tbody className='font-normal'>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={4}>Loading.....</td>
+                  </tr>
+                ) : salesData.length > 0 ? (
+                  salesData.map(item => (
+                    <tr key={item.uid}>
+                      <td className='px-6 py-4'>
+                        {format(item.tanggal.toDate(), 'dd MMMM yyyy')}
+                      </td>
+                      <td className='px-6 py-4'>{item.idOrder}</td>
+                      <td className='px-6 py-4'>
+                        {formatCurrency(item.totalPenjualan)}
+                      </td>
+                      <td className='px-6 py-4'>
+                        <Button
+                          title='Detail'
+                          containerStyles='bg-[#5C25E7] rounded-lg text-white px-3 py-2 w-1/2 2xl:w-1/3'
+                          handleClick={() => handleDetailAction(item)}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4}>tidak ada data</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -84,11 +131,41 @@ const TransaksiPenjualan = () => {
       </div>
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <div className='flex flex-col w-full relative px-8 py-6'>
-          <div className='mb-5'>
+          <div className='mb-8'>
             <h1 className='font-semibold text-black text-xl'>
-              Detail Penjualan - OD0008
+              Detail Penjualan - {salesDetail?.idOrder ?? ''}
             </h1>
-            <p>{Date()}</p>
+            <p>
+              {format(
+                salesDetail?.tanggal?.toDate() || new Date(),
+                'dd MMMM yyyy'
+              )}
+            </p>
+          </div>
+          <div className='px-3 flex flex-col'>
+            {salesDetail && salesDetail.obat && salesDetail.obat.length > 0 ? (
+              salesDetail?.obat.map(item => (
+                <div key={item.MedicineInCart.id}>
+                  <MedicineInCart
+                    MedicineInCart={item.MedicineInCart}
+                    totalMedicine={item.totalMedicine}
+                    isConfirmation
+                  />
+                </div>
+              ))
+            ) : (
+              <p>tidak ada data!</p>
+            )}
+            <div className='flex flex-row justify-between border-t-2 border-[#D8CCF3] w-full pt-3'>
+              <div className='flex flex-col'>
+                <h3 className='font-semibold'>TOTAL</h3>
+                <span>{salesDetail?.totalItems ?? 0} item</span>
+              </div>
+
+              <h3 className='font-semibold text-lg'>
+                {formatCurrency(salesDetail?.totalPenjualan ?? 0)}
+              </h3>
+            </div>
           </div>
           <span
             className='absolute top-3 right-3 cursor-pointer'

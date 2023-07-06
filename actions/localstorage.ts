@@ -1,6 +1,8 @@
-export function saveCurrentUser(key: string, data: string) {
+import { User } from '@/types';
+
+export function saveCurrentUser(key: string, data: User | null) {
   try {
-    localStorage.setItem(key, data);
+    localStorage.setItem(key, JSON.stringify(data));
   } catch (error: Error | any) {
     return error;
   }

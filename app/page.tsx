@@ -2,37 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { Authentication } from '@/actions/auth';
-import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
-import { getCurrentUser } from '@/actions/localstorage';
+import { Button } from '@/components';
+import { showAlert } from '@/components/SweetAlert';
+import { setCookie } from '@/actions/cookie';
 
 export default function Home() {
-  const router = useRouter();
-  const userLogged = useAuthContext();
+  const { userLogin, setUserLogin } = useAuthContext();
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [type, setType] = useState<string>('signin');
-  const [currentUser, setCurrentUser] = useState<object | null>(null);
+  const [isLoading, setLoading] = useState<boolean>(false);
 
   const handleAuthentication = async (
     event: React.FormEvent<HTMLFormElement>,
     type: string
   ) => {
     event.preventDefault();
-
-    const { error } = await Authentication(email, password, type);
+    setLoading(true);
+    const { result, error } = await Authentication(email, password, type);
     if (error) {
-      alert(error.code);
+      showAlert('Error', error, 'error');
+      setLoading(false);
       return;
     }
-  };
 
-  useEffect(() => {
-    if (userLogged != null) {
-      router.push('/dashboard');
-    }
-  }, [userLogged]);
+    await setCookie('userSession', result.data, { expires: 1 });
+    showAlert(result.status, result.message, 'success');
+    setUserLogin(result.data);
+    setLoading(false);
+  };
 
   return (
     <div className='flex flex-col justify-center items-center h-screen w-full'>
@@ -84,12 +84,12 @@ export default function Home() {
             />
           </div>
 
-          <button
-            type='submit'
-            className='bg-[#5C25E7] px-4 py-2 rounded-full text-white text-sm w-1/4 font-light self-center'
-          >
-            LOGIN
-          </button>
+          <Button
+            btnType='submit'
+            isDisabled={isLoading}
+            title={isLoading ? 'Loading....' : `LOGIN`}
+            containerStyles='bg-[#5C25E7] px-4 py-2 rounded-full text-white text-sm w-1/4 font-light self-center font-medium'
+          />
         </form>
       </div>
     </div>

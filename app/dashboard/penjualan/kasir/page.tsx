@@ -1,6 +1,12 @@
 'use client';
+import { ChangeEvent, useEffect, useState } from 'react';
 
-import { getMedicines } from '@/actions/firestore';
+import {
+  createPenjualan,
+  getMedicines,
+  subscribeToCollectionChanges,
+  unsubscribeFromCollectionChanges,
+} from '@/actions/firestore';
 import { Button, Modal, SearchBar, Tabs } from '@/components';
 import { Medicine as MedicineCard } from '@/components';
 import MedicineInCart from '@/components/MedicineInCart';
@@ -9,17 +15,36 @@ import { penjualanMenus } from '@/constant/menus';
 import { useCart } from '@/context/CartContext';
 import { Medicine } from '@/types';
 import { formatCurrency } from '@/utils/helper';
-import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 
 const Kasir = () => {
-  const { cart } = useCart();
+  const { cart, purgeCart } = useCart();
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [totalPriceCart, setTotalPriceCart] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const handleClose = () => {
     setModalOpen(false);
+  };
+
+  const handleCreatePenjualan = async () => {
+    setIsLoading(true);
+    const { result, error } = await createPenjualan(cart);
+    if (error) {
+      showAlert('Terjadi Kesalaahn', error, 'error');
+      setIsLoading(false);
+    }
+    showAlert('Sukses', result.message, 'success');
+    purgeCart();
+    handleClose();
+    setIsLoading(false);
+  };
+
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
   };
 
   useEffect(() => {
@@ -36,8 +61,6 @@ const Kasir = () => {
     );
 
     setTotalItems(totalItems);
-    // Lakukan tindakan yang sesuai dengan total harga baru, misalnya penyimpanan ke state atau pengiriman ke komponen lain.
-    // Misalnya: setTotalPrice(totalPrice);
   }, [cart]);
 
   useEffect(() => {
@@ -48,10 +71,26 @@ const Kasir = () => {
         return;
       }
       setMedicines(result);
+      const unsubscribe = subscribeToCollectionChanges(
+        'obat',
+        (updatedMedicines: Medicine[]) => {
+          setMedicines(updatedMedicines);
+        }
+      );
+
+      return () => {
+        unsubscribeFromCollectionChanges(unsubscribe);
+      };
     };
 
     fetchData();
   }, []);
+
+  const filteredMedicines = searchQuery
+    ? medicines.filter(medicine =>
+        medicine.medicine_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : medicines;
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
@@ -60,9 +99,13 @@ const Kasir = () => {
           <Tabs menus={penjualanMenus} />
           <div className='flex flex-row min-h-[500px] max-h-[600px] space-x-5'>
             <div className='flex-grow bg-white overflow-hidden overflow-y-scroll rounded-lg mt-3 shadow-md p-6 w-3/4'>
-              <SearchBar searchIcon />
-              {medicines.length > 0
-                ? medicines.map(item => (
+              <SearchBar
+                searchIcon
+                placeholder='Cari Nama Obat...'
+                handleChange={e => handleSearchChange(e)}
+              />
+              {filteredMedicines.length > 0
+                ? filteredMedicines.map(item => (
                     <div key={item.medicine_name}>
                       <MedicineCard
                         id={item.id}
@@ -122,9 +165,9 @@ const Kasir = () => {
           <div className='flex flex-col relative px-5 py-4'>
             <div className='mb-5'>
               <h1 className='font-semibold text-black text-xl'>
-                Detail Penjualan - OD0008
+                Detail Penjualan
               </h1>
-              <p>{Date()}</p>
+              <p>{format(new Date(), 'dd MMMM yyyy')}</p>
             </div>
 
             <div className='px-3 flex flex-col'>
@@ -169,11 +212,10 @@ const Kasir = () => {
               </div>
 
               <Button
-                title='BAYAR'
+                title={isLoading ? 'Loading..' : 'BAYAR'}
+                isDisabled={isLoading}
                 containerStyles='px-3 py-2 bg-[#5C25E7] text-white rounded-lg mt-2 self-end mb-5'
-                handleClick={() =>
-                  showAlert('Sukses', 'Pembelian berhasil disimpan', 'success')
-                }
+                handleClick={handleCreatePenjualan}
               />
             </div>
 

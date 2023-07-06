@@ -6,8 +6,7 @@ import {
   getAuth,
 } from 'firebase/auth';
 import { addUser, getUserLogged } from './firestore';
-import { removeCurrentuser } from './localstorage';
-
+import { resultRequest } from '@/types';
 const auth = getAuth(firebaseApp);
 
 export async function Authentication(
@@ -16,12 +15,11 @@ export async function Authentication(
   type: string
 ) {
   let mailMasking = '@mail.com';
-  let result = null,
-    error = null;
-
+  let result: resultRequest | any = null;
+  let error: any = null;
   try {
     type === 'signup'
-      ? (result = await createUserWithEmailAndPassword(
+      ? await createUserWithEmailAndPassword(
           auth,
           email + mailMasking,
           password
@@ -32,14 +30,20 @@ export async function Authentication(
             uid: registeredUser.user.uid,
             role: 2,
           });
-        }))
-      : (result = await signInWithEmailAndPassword(
+        })
+      : await signInWithEmailAndPassword(
           auth,
           email + mailMasking,
           password
-        ).then(loggedUser => {
-          getUserLogged('users', loggedUser.user.uid);
-        }));
+        ).then(async loggedUser => {
+          const currentUser = await getUserLogged('users', loggedUser.user.uid);
+          result = {
+            code: 200,
+            message: `Berhasil masuk, selamat datang ${currentUser.userLogged?.username}`,
+            status: 'Sukses',
+            data: currentUser.userLogged,
+          };
+        });
   } catch (e: Error | any) {
     error = e;
   }
@@ -47,12 +51,12 @@ export async function Authentication(
   return { result, error };
 }
 
-export async function logOut() {
+export async function LogOut() {
   let result = null,
     error = null;
+
   try {
     result = await signOut(auth);
-    removeCurrentuser('currentUser');
   } catch (err) {
     error = err;
   }

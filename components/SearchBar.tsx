@@ -4,12 +4,16 @@ const SearchBar = ({
   containerStyles,
   inputStyles,
   searchIcon,
+  placeholder,
+  handleChange,
 }: SearchBarProps) => {
   return (
     <div className={`relative group ${containerStyles}`}>
       <input
         type='text'
         className={`w-full px-3 py-2 outline-none border border-[#D8CCF3] focus:border-[#5C25E7] ${inputStyles}`}
+        placeholder={placeholder}
+        onChange={handleChange}
       />
       {searchIcon && (
         <span className='absolute right-4 top-1/2 transform -translate-y-1/2'>

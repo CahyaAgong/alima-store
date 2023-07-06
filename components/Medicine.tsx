@@ -27,6 +27,7 @@ const Medicine = ({ id, medicine_name, price, stock, image }: Medicine) => {
       if (existingMedicine.totalMedicine >= stock) return;
       increaseQuantity(existingMedicine);
     } else {
+      if (stock === 0) return;
       addToCart({
         MedicineInCart: { id, medicine_name, price, stock, image },
         totalMedicine: 1,
@@ -36,10 +37,11 @@ const Medicine = ({ id, medicine_name, price, stock, image }: Medicine) => {
 
   return (
     <div className='flex flex-row justify-center items-center border-b border-b-gray-300 mb-3 w-full px-9 py-7 space-x-3'>
-      <div className='w-[8%] h-14 overflow-hidden rounded-lg flex relative shadow-md'>
+      <div className='w-[8%] h-14 overflow-hidden rounded-lg flex relative shadow-lg'>
         <Image
           src={image ? image : '/DEFAULT_MEDICINE_IMG.webp'}
           fill
+          objectFit='contain'
           alt={medicine_name}
         />
       </div>
@@ -47,7 +49,11 @@ const Medicine = ({ id, medicine_name, price, stock, image }: Medicine) => {
       <div className='flex flex-row justify-between items-center text-black w-[80%]'>
         <div className='flex flex-col'>
           <h3 className='font-medium'>{medicine_name}</h3>
-          <span className='font-normal text-sm'>Stock : {stock}</span>
+          <span
+            className={`font-normal text-sm ${stock === 0 && `text-[#F03A3A]`}`}
+          >
+            {stock === 0 ? `Stock Habis` : `Stock : ${stock}`}
+          </span>
         </div>
 
         <div>

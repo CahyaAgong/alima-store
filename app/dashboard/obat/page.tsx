@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { ChangeEvent, useEffect, useState } from 'react';
 
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -11,22 +10,26 @@ import {
   addMedicine,
   deleteMedicine,
   updateMedicine,
-  subscribeToMedicinesChanges,
-  unsubscribeFromMedicinesChanges,
+  subscribeToCollectionChanges,
+  unsubscribeFromCollectionChanges,
 } from '@/actions/firestore';
 
 import { Button, FileUploader, SearchBar } from '@/components';
 import Modal from '@/components/Modal';
 import { Medicine } from '@/types';
 import { showAlert } from '@/components/SweetAlert';
+import { formatCurrency } from '@/utils/helper';
 
 export default function Obat() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [isFetching, setFetching] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [medicineId, setMeidicineId] = useState<string>('');
   const [image, setImage] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isProceedData, setProceedData] = useState<boolean>(false);
 
   const [formValues, setFormValues] = useState<Medicine>({
     id: '',
@@ -84,19 +87,22 @@ export default function Obat() {
     }));
   };
 
-  const handleSubmitMedicine = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitMedicine = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     setLoading(true);
+    setProceedData(true);
 
     const { medicine_name, price, stock } = formValues;
     if (isEdit) {
-      handleUpdateMedicine(medicineId);
+      await handleUpdateMedicine(medicineId);
     } else {
-      handleAddMedicine(medicine_name, price, stock);
+      await handleAddMedicine(medicine_name, price, stock);
     }
   };
 
-  const handleDeleteMedicine = (medicineId: string) => {
+  const handleDeleteMedicine = async (medicineId: string) => {
     setLoading(true);
     const mySwal = withReactContent(Swal);
     mySwal
@@ -114,13 +120,14 @@ export default function Obat() {
       })
       .then(async res => {
         if (res.isConfirmed) {
+          setProceedData(true);
           const { result, error } = await deleteMedicine(medicineId);
           if (error) {
             mySwal.fire({
               title: 'Error',
               text: `Terjadi Error ${error}`,
               icon: 'error',
-              showCloseButton: true,
+              showCloseButton: false,
             });
             return;
           }
@@ -131,7 +138,7 @@ export default function Obat() {
             icon: 'success',
             iconColor: '#47C3A6',
             showConfirmButton: false,
-            showCloseButton: true,
+            showCloseButton: false,
           });
           setLoading(false);
         }
@@ -149,13 +156,13 @@ export default function Obat() {
     }
     const { result, error } = await addMedicine(namaObat, harga, stock, image);
     if (error) {
-      showAlert('Error', `terjadi error ${error}`);
+      showAlert('Error', error, 'error');
       setModalOpen(true);
       setLoading(false);
       return;
     }
 
-    showAlert('Sukses', result);
+    showAlert('Sukses', result, 'success');
     clearForm();
     setModalOpen(false);
     setLoading(false);
@@ -187,33 +194,55 @@ export default function Obat() {
     handleCloseModal();
   };
 
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
   useEffect(() => {
+    setFetching(true);
     const fetchData = async () => {
       const { result, error } = await getMedicines('obat');
       if (error) {
         showAlert('error', error, 'error');
+        setFetching(false);
         return;
       }
       setMedicines(result);
-      const unsubscribe = subscribeToMedicinesChanges(
-        (updatedMedicines: Medicine[]) => {
-          if (!loading) setMedicines(updatedMedicines);
-        }
-      );
-
-      return () => {
-        unsubscribeFromMedicinesChanges(unsubscribe);
-      };
+      setFetching(false);
     };
 
     fetchData();
-  }, []);
+
+    if (isProceedData) {
+      const unsubscribe = subscribeToCollectionChanges(
+        'obat',
+        (updatedMedicines: Medicine[]) => {
+          if (!isFetching) setMedicines(updatedMedicines);
+        }
+      );
+      setProceedData(false);
+      return () => {
+        unsubscribeFromCollectionChanges(unsubscribe);
+      };
+    }
+  }, [isProceedData]);
+
+  const filteredMedicines = searchQuery
+    ? medicines.filter(medicine =>
+        medicine.medicine_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : medicines;
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen'>
       <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
         <div className='flex flex-row space-x-5 w-full'>
-          <SearchBar containerStyles='w-[85%]' searchIcon />
+          <SearchBar
+            containerStyles='w-[85%] rounded-lg'
+            searchIcon
+            handleChange={e => handleSearchChange(e)}
+            placeholder='Cari Nama Obat...'
+          />
           <Button
             title={'TAMBAH OBAT'}
             containerStyles={`w-[15%] bg-[#5C25E7] text-white rounded-lg text-sm font-semibold`}
@@ -237,37 +266,47 @@ export default function Obat() {
             </thead>
 
             <tbody>
-              {medicines.map(medicine => {
-                return (
-                  <tr key={medicine.id}>
-                    <td>{medicine.medicine_name}</td>
-                    <td>{medicine.price}</td>
-                    <td>0</td>
-                    <td>{medicine.stock}</td>
-                    <td>
-                      <Button
-                        title={`UBAH`}
-                        containerStyles={`bg-[#F0D33A] text-black rounded-lg text-sm font-normal px-4 py-2 mr-1`}
-                        handleClick={() =>
-                          handleOpenModal(
-                            true,
-                            medicine.id,
-                            medicine.medicine_name,
-                            medicine.price,
-                            medicine.stock,
-                            medicine.image
-                          )
-                        }
-                      />
-                      <Button
-                        title={`HAPUS`}
-                        containerStyles={`bg-[#F03A3A] text-white rounded-lg text-sm font-normal px-4 py-2 ml-1`}
-                        handleClick={() => handleDeleteMedicine(medicine.id)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
+              {isFetching ? (
+                <tr>
+                  <td colSpan={5}>Loading.....</td>
+                </tr>
+              ) : filteredMedicines.length > 0 ? (
+                filteredMedicines.map(medicine => {
+                  return (
+                    <tr key={medicine.id}>
+                      <td>{medicine.medicine_name}</td>
+                      <td>{formatCurrency(parseInt(medicine.price))}</td>
+                      <td>{medicine.safetyStock}</td>
+                      <td>{medicine.stock}</td>
+                      <td>
+                        <Button
+                          title={`UBAH`}
+                          containerStyles={`bg-[#F0D33A] text-black rounded-lg text-sm font-normal px-4 py-2 mr-1`}
+                          handleClick={() =>
+                            handleOpenModal(
+                              true,
+                              medicine.id,
+                              medicine.medicine_name,
+                              medicine.price,
+                              medicine.stock,
+                              medicine.image
+                            )
+                          }
+                        />
+                        <Button
+                          title={`HAPUS`}
+                          containerStyles={`bg-[#F03A3A] text-white rounded-lg text-sm font-normal px-4 py-2 ml-1`}
+                          handleClick={() => handleDeleteMedicine(medicine.id)}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5}>tidak ada data!</td>
+                </tr>
+              )}
             </tbody>
           </table>
 

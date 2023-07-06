@@ -1,4 +1,23 @@
-import React, { MouseEventHandler } from 'react';
+import { Timestamp } from 'firebase/firestore';
+import React, { ChangeEvent, MouseEventHandler } from 'react';
+
+export interface User {
+  email: string;
+  role: number;
+  uid: string;
+  username: string;
+}
+
+export interface ContextProviderProps {
+  children: React.ReactNode;
+}
+
+export interface resultRequest {
+  code: number;
+  message: any;
+  status: string;
+  data?: any;
+}
 
 export interface Medicine {
   id: string;
@@ -6,6 +25,8 @@ export interface Medicine {
   price: string;
   stock: number;
   image: string | null;
+  safetyStock?: number;
+  isExistInProcurement?: boolean;
 }
 
 export interface Carts {
@@ -20,6 +41,25 @@ export interface CartContextProps {
   removeFromCart: (medicine: Carts) => void;
   increaseQuantity: (medicine: Carts) => void;
   decreaseQuantity: (medicine: Carts) => void;
+  purgeCart: () => void;
+}
+
+export interface SalesData {
+  idOrder: string;
+  obat: Carts[];
+  tanggal: Timestamp;
+  totalPenjualan: number;
+  totalItems: number;
+  uid: string;
+}
+
+export interface ProcurementData {
+  uid: string;
+  procurementDate: Timestamp;
+  medicine: Medicine;
+  Qty: number;
+  oldStock: string;
+  status: string;
 }
 
 // ========= interface untuk @/components
@@ -39,6 +79,8 @@ export interface SearchBarProps {
   containerStyles?: string;
   inputStyles?: string;
   searchIcon?: boolean;
+  placeholder?: string;
+  handleChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export interface StatusFlagProps {

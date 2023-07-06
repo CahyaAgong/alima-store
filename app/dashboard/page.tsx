@@ -2,23 +2,70 @@
 
 import { useEffect, useState } from 'react';
 
-import { CustomDatePicker, Navbar } from '@/components';
+import { CustomDatePicker } from '@/components';
+import { ProcurementData, SalesData } from '@/types';
+import {
+  getConfirmedProcurements,
+  getDataPenjualan,
+} from '@/actions/firestore';
+import { showAlert } from '@/components/SweetAlert';
+import { formatCurrency } from '@/utils/helper';
+import { format } from 'date-fns';
 
 export default function Dashboard() {
-  const [startSelectedDate, setStartSelectedDate] = useState<Date | null>(
-    new Date()
-  );
-  const [endSelectedDate, setEndSelectedDate] = useState<Date | null>(
-    new Date()
-  );
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [procurementData, setProcurementData] = useState<ProcurementData[]>([]);
+  const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [isFetchingProcurement, setIsFetchingProcurement] =
+    useState<boolean>(false);
 
-  const handleStartDateChange = (date: Date | null) => {
+  const [startSelectedDate, setStartSelectedDate] = useState<Date>(new Date());
+  const [endSelectedDate, setEndSelectedDate] = useState<Date>(new Date());
+
+  const handleStartDateChange = (date: Date) => {
     setStartSelectedDate(date);
   };
 
-  const handleEndDateChange = (date: Date | null) => {
+  const handleEndDateChange = (date: Date) => {
     setEndSelectedDate(date);
   };
+
+  const fetchDataSales = async () => {
+    setIsFetching(true);
+    const { result, error } = await getDataPenjualan(
+      startSelectedDate,
+      endSelectedDate
+    );
+
+    if (error) {
+      setIsFetching(false);
+      showAlert('Terjadi Kesalahan', error, 'error');
+      return;
+    }
+    setSalesData(result.data);
+    setIsFetching(false);
+  };
+
+  const fetchDataProcurement = async () => {
+    setIsFetchingProcurement(true);
+    const result = await getConfirmedProcurements(
+      startSelectedDate,
+      endSelectedDate
+    );
+    const { code, message, status, data } = result;
+    if (code === 500) {
+      showAlert(status, message, 'error');
+      setIsFetchingProcurement(false);
+      return;
+    }
+    setProcurementData(data);
+    setIsFetchingProcurement(false);
+  };
+
+  useEffect(() => {
+    fetchDataSales();
+    fetchDataProcurement();
+  }, [startSelectedDate, endSelectedDate]);
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] w-full h-screen'>
@@ -135,30 +182,22 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className='text-center text-xl font-normal'>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Rp 25.000</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Rp 25.000</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Rp 25.000</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Rp 25.000</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Rp 25.000</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Rp 25.000</td>
-                </tr>
+                {isFetching ? (
+                  <tr>
+                    <td colSpan={2}> Loading .... </td>
+                  </tr>
+                ) : salesData.length > 0 ? (
+                  salesData.map(item => (
+                    <tr key={item.uid}>
+                      <td>{format(item.tanggal.toDate(), 'dd MMMM yyyy')}</td>
+                      <td>{formatCurrency(item.totalPenjualan)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={2}>Tidak ada data..</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -176,36 +215,25 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className='text-center text-xl font-normal'>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Amoxicillin</td>
-                  <td>6</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Amoxicillin</td>
-                  <td>6</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Amoxicillin</td>
-                  <td>6</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Amoxicillin</td>
-                  <td>6</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Amoxicillin</td>
-                  <td>6</td>
-                </tr>
-                <tr>
-                  <td>22 Juni 2023</td>
-                  <td>Amoxicillin</td>
-                  <td>6</td>
-                </tr>
+                {isFetchingProcurement ? (
+                  <tr>
+                    <td colSpan={3}>Loading....</td>
+                  </tr>
+                ) : procurementData.length > 0 ? (
+                  procurementData.map(item => (
+                    <tr key={item.uid}>
+                      <td>
+                        {format(item.procurementDate.toDate(), 'dd MMMM yyyy')}
+                      </td>
+                      <td>{item.medicine.medicine_name}</td>
+                      <td>{item.Qty + parseInt(item.oldStock)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3}>Tidak ada data..</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

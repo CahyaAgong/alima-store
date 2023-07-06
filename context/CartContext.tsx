@@ -14,6 +14,7 @@ const CartContext = createContext<CartContextProps>({
   removeFromCart: () => {},
   increaseQuantity: () => {},
   decreaseQuantity: () => {},
+  purgeCart: () => {},
 });
 
 export const useCart = (): CartContextProps => {
@@ -63,12 +64,17 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     );
   };
 
+  const purgeCart = () => {
+    setCart([]);
+  };
+
   const value: CartContextProps = {
     cart,
     addToCart,
     removeFromCart,
     increaseQuantity,
     decreaseQuantity,
+    purgeCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

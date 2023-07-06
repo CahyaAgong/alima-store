@@ -1,17 +1,150 @@
 'use client';
 
-import { useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 
 import { Button, Modal, StatusFlag, Tabs } from '@/components';
 import SearchBar from '@/components/SearchBar';
 import { pengadaanMenus } from '@/constant/menus';
+import { Medicine } from '@/types';
+import { showAlert } from '@/components/SweetAlert';
+import {
+  createPengadaan,
+  getMedicines,
+  getProcurementByMedicineId,
+  subscribeToCollectionChanges,
+  unsubscribeFromCollectionChanges,
+  updateMedicine,
+  updateProcurementStatus,
+} from '@/actions/firestore';
 
 export default function RencanaPengadaan() {
+  const initialMedicine: Medicine = {
+    id: '',
+    medicine_name: '',
+    price: '',
+    stock: 0,
+    image: '',
+  };
+
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isProceedData, setProceedData] = useState<boolean>(false);
+  const [isFetching, setFecthing] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [medicineItem, setMedicineItem] = useState<Medicine>(initialMedicine);
+  const [Qty, setQty] = useState<string>('0');
+  const [loadProcurement, setLoadProcurement] = useState<string>('');
 
   const handleCloseModal = () => {
     setModalOpen(false);
+    setMedicineItem(initialMedicine);
+    setQty('0');
   };
+
+  const handleInputchange = (
+    event: ChangeEvent<HTMLInputElement>,
+    isSearch: boolean = true
+  ) => {
+    if (isSearch) {
+      setSearchQuery(event.target.value);
+    } else {
+      setQty(event.target.value);
+    }
+  };
+
+  const openModalProcurement = async (item: Medicine) => {
+    setMedicineItem(item);
+    if (item.isExistInProcurement) {
+      setLoadProcurement(item.id);
+      const procurementData = await getProcurementByMedicineId(item.id);
+      if (procurementData) {
+        setQty(procurementData.Qty.toString());
+        setLoadProcurement('');
+      }
+    }
+    setModalOpen(true);
+  };
+
+  const handleAddProcurement = async () => {
+    const { result, error } = await createPengadaan(
+      medicineItem,
+      parseInt(Qty)
+    );
+    if (error) {
+      showAlert('Error', error, 'error');
+      setLoading(false);
+      return;
+    }
+    showAlert('Sukses', result.message, 'success');
+  };
+
+  const handleUpdateProcurement = async () => {
+    if (medicineItem) {
+      const procurementData = await getProcurementByMedicineId(medicineItem.id);
+      if (procurementData) {
+        const { result, error } = await updateProcurementStatus(
+          procurementData.uid
+        );
+        if (error) {
+          showAlert('Error', error, 'error');
+          return;
+        }
+        showAlert(result.status, result.message, 'success');
+      }
+    }
+  };
+
+  const handleSubmitProcurement = async () => {
+    if (Qty === '0' || Qty === '') {
+      showAlert('Perhatian', 'Isi form dengan benar', 'warning');
+      return;
+    }
+    setLoading(true);
+    setProceedData(true);
+
+    if (medicineItem.isExistInProcurement) {
+      await handleUpdateProcurement();
+    } else {
+      await handleAddProcurement();
+    }
+    setLoading(false);
+    handleCloseModal();
+  };
+
+  useEffect(() => {
+    setFecthing(true);
+    const fetchData = async () => {
+      const { result, error } = await getMedicines('obat');
+      if (error) {
+        showAlert('error', error, 'error');
+        setFecthing(false);
+        return;
+      }
+      setMedicines(result);
+      setFecthing(false);
+
+      if (isProceedData) {
+        const unsubscribe = subscribeToCollectionChanges(
+          'obat',
+          (updatedMedicines: Medicine[]) => {
+            if (!isFetching) setMedicines(updatedMedicines);
+          }
+        );
+        setProceedData(false);
+        return () => {
+          unsubscribeFromCollectionChanges(unsubscribe);
+        };
+      }
+    };
+    fetchData();
+  }, [isProceedData]);
+
+  const filteredMedicines = searchQuery
+    ? medicines.filter(medicine =>
+        medicine.medicine_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : medicines;
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
@@ -19,7 +152,12 @@ export default function RencanaPengadaan() {
         <div className='w-full flex flex-col'>
           <Tabs menus={pengadaanMenus} />
           <div className='bg-white min-h-[600px] max-h-[700px] overflow-hidden overflow-y-scroll rounded-lg mt-10 pb-10 shadow-md p-6'>
-            <SearchBar inputStyles='rounded-md' searchIcon />
+            <SearchBar
+              inputStyles='rounded-md'
+              searchIcon
+              handleChange={e => handleInputchange(e)}
+              placeholder='Cari Nama Obat...'
+            />
 
             <table className='table-fixed w-full text-center mt-10'>
               <thead>
@@ -40,25 +178,66 @@ export default function RencanaPengadaan() {
               </thead>
 
               <tbody className='font-semibold'>
-                <tr>
-                  <td className='text-left px-6 py-4'>Obat 1</td>
-                  <td className='px-6 py-4'>
-                    <StatusFlag
-                      title='Tersedia'
-                      containerStyles='bg-[#47C3A6] px-3 py-2 text-white text-center rounded-full'
-                    />
-                  </td>
-                  <td>
-                    <span>3</span>
-                  </td>
-                  <td>
-                    <Button
-                      title='Pesan'
-                      containerStyles='bg-[#F0653A] rounded-lg text-white px-3 py-2 w-full'
-                      handleClick={() => setModalOpen(true)}
-                    />
-                  </td>
-                </tr>
+                {isFetching ? (
+                  <tr>
+                    <td colSpan={5}>Loading...</td>
+                  </tr>
+                ) : filteredMedicines.length > 0 ? (
+                  filteredMedicines.map(item => {
+                    return (
+                      <tr key={item.id}>
+                        <td className='text-left px-6 py-4'>
+                          {item?.medicine_name ?? ''}
+                        </td>
+                        <td className='px-6 py-4'>
+                          <StatusFlag
+                            title={
+                              item
+                                ? item.isExistInProcurement
+                                  ? 'Dipesan'
+                                  : item.stock && item.safetyStock
+                                  ? item.stock >= item.safetyStock
+                                    ? 'Tersedia'
+                                    : item.stock < 1
+                                    ? 'Terbatas'
+                                    : 'Terbatas'
+                                  : 'Tersedia'
+                                : ''
+                            }
+                            containerStyles='px-3 py-2 text-center rounded-full'
+                          />
+                        </td>
+                        <td>
+                          <span>{item?.stock ?? 0}</span>
+                        </td>
+                        <td>
+                          <Button
+                            title={
+                              item.isExistInProcurement
+                                ? loadProcurement === item.id
+                                  ? 'Loading..'
+                                  : 'Konfirmasi'
+                                : 'Pesan'
+                            }
+                            isDisabled={
+                              loadProcurement === item.id ? true : false
+                            }
+                            containerStyles={`rounded-lg text-white font-normal px-3 py-2 w-1/2 ${
+                              item.isExistInProcurement
+                                ? 'bg-[#5C25E7]'
+                                : 'bg-[#F0653A]'
+                            }`}
+                            handleClick={() => openModalProcurement(item)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5}>Tidak ada data!</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -66,19 +245,30 @@ export default function RencanaPengadaan() {
       </div>
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <div className='flex flex-col w-full relative px-8 py-6'>
-          <h2 className='text-xl font-bold'>Pesan</h2>
+          <h2 className='text-xl font-bold'>
+            {medicineItem.isExistInProcurement
+              ? 'Konfirmasi Pengadaan'
+              : 'Pesan'}
+          </h2>
           <p className='mb-3 text-sm'>
-            Masukkan jumlah pengadaan obat yang dibutuhkan
+            {medicineItem.isExistInProcurement
+              ? 'Jumlah obat yang datang adalah sebanyak'
+              : 'Masukkan jumlah pengadaan obat yang dibutuhkan'}
           </p>
           <div className='flex flex-row space-x-3'>
             <input
               type='number'
               className='w-[80%] px-3 py-2 rounded-lg outline-none border border-[#5C25E7] font-medium text-[#5C25E7] placeholder-[#5C25E7] text-sm'
               placeholder='Jumlah Pesanan'
+              value={Qty}
+              onChange={e => handleInputchange(e, false)}
             />
             <Button
-              title='SIMPAN'
+              btnType='button'
+              isDisabled={loading}
+              title={loading ? 'Loading...' : 'SIMPAN'}
               containerStyles='bg-[#5C25E7] rounded-lg text-white px-3 py-2'
+              handleClick={handleSubmitProcurement}
             />
           </div>
           <span

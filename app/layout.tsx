@@ -1,6 +1,8 @@
+'use client';
+
+import { AuthContextProvider } from '@/context/AuthContext';
 import CartProvider from '@/context/CartContext';
 import './globals.css';
-import { AuthContextProvider } from '@/context/AuthContext';
 
 export const metadata = {
   title: 'Toko Obat Alima',
