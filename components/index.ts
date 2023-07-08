@@ -7,6 +7,7 @@ import StatusFlag from './StatusFlag';
 import CustomDatePicker from './DatePicker';
 import Medicine from './Medicine';
 import FileUploader from './FileUploader';
+import PdfContent from './PdfContent';
 
 export {
   Navbar,
@@ -18,4 +19,5 @@ export {
   CustomDatePicker,
   Medicine,
   FileUploader,
+  PdfContent,
 };

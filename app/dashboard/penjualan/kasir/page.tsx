@@ -25,6 +25,7 @@ const Kasir = () => {
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFetching, setFetching] = useState<boolean>(false);
 
   const handleClose = () => {
     setModalOpen(false);
@@ -65,12 +66,15 @@ const Kasir = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setFetching(true);
       const { result, error } = await getMedicines('obat');
       if (error) {
         showAlert('error', error, 'error');
+        setFetching(false);
         return;
       }
       setMedicines(result);
+      setFetching(false);
       const unsubscribe = subscribeToCollectionChanges(
         'obat',
         (updatedMedicines: Medicine[]) => {
@@ -93,33 +97,38 @@ const Kasir = () => {
     : medicines;
 
   return (
-    <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
-      <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
+    <div className='flex flex-col items-center h-screen w-full'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] pb-20 w-full'>
         <div className='w-full flex flex-col'>
           <Tabs menus={penjualanMenus} />
-          <div className='flex flex-row min-h-[500px] max-h-[600px] space-x-5'>
-            <div className='flex-grow bg-white overflow-hidden overflow-y-scroll rounded-lg mt-3 shadow-md p-6 w-3/4'>
+          <div className='flex flex-row min-h-[500px] h-[500px] max-h-[500px] space-x-5'>
+            <div className='bg-white overflow-hidden overflow-y-scroll rounded-lg mt-3 shadow-md p-6 w-3/4'>
               <SearchBar
                 searchIcon
                 placeholder='Cari Nama Obat...'
                 handleChange={e => handleSearchChange(e)}
               />
-              {filteredMedicines.length > 0
-                ? filteredMedicines.map(item => (
-                    <div key={item.medicine_name}>
-                      <MedicineCard
-                        id={item.id}
-                        medicine_name={item.medicine_name}
-                        price={item.price}
-                        stock={item.stock}
-                        image={item.image}
-                      />
-                    </div>
-                  ))
-                : ''}
+              {isFetching ? (
+                <div className='text-center mt-10'>Loading...</div>
+              ) : filteredMedicines.length > 0 ? (
+                filteredMedicines.map(item => (
+                  <div key={item.medicine_name}>
+                    <MedicineCard
+                      id={item.id}
+                      medicine_name={item.medicine_name}
+                      price={item.price}
+                      stock={item.stock}
+                      image={item.image}
+                      noBPOM={item.noBPOM}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className='text-center mt-10'>Data Obat Kosong...</div>
+              )}
             </div>
 
-            <div className='flex-grow flex flex-col bg-white overflow-hidden overflow-y-scroll rounded-lg mt-3 shadow-md p-5 w-1/4'>
+            <div className='flex flex-col bg-white overflow-hidden overflow-y-scroll rounded-lg mt-3 shadow-md p-5 w-1/4'>
               <h2 className='text-4xl font-semibold mb-8'>Pesanan</h2>
               {cart.length > 0 ? (
                 cart.map(item => (

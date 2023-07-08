@@ -9,7 +9,8 @@ export const showAlert = (
     title,
     text,
     icon,
-    confirmButtonText: 'OK',
+    showConfirmButton: false,
+    timer: 2000,
   });
 };
 

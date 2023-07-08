@@ -2,13 +2,22 @@
 import { useEffect, useState } from 'react';
 
 import { getDataPenjualan } from '@/actions/firestore';
-import { Button, CustomDatePicker, Modal, Tabs } from '@/components';
+import {
+  Button,
+  CustomDatePicker,
+  Modal,
+  PdfContent,
+  Tabs,
+} from '@/components';
 import MedicineInCart from '@/components/MedicineInCart';
 import { showAlert } from '@/components/SweetAlert';
 import { penjualanMenus } from '@/constant/menus';
 import { SalesData } from '@/types';
 import { formatCurrency } from '@/utils/helper';
 import { format } from 'date-fns';
+
+import { pdf } from '@react-pdf/renderer';
+import FileSaver from 'file-saver';
 
 const TransaksiPenjualan = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -37,7 +46,29 @@ const TransaksiPenjualan = () => {
     setSalesDetail(item);
   };
 
+  const handlePrint = async (item: SalesData[]) => {
+    const blob = await pdf(
+      <PdfContent
+        data={item}
+        type='PNJ'
+        startDate={startSelectedDate}
+        endDate={endSelectedDate}
+      />
+    ).toBlob();
+    const fileName = `Report Penjualan - ${format(
+      startSelectedDate,
+      'dd MMMM yyyy'
+    )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
+    FileSaver.saveAs(blob, fileName);
+  };
+
   useEffect(() => {
+    if (startSelectedDate > endSelectedDate) {
+      showAlert('Perhatian', 'Rentang tanggal salah!', 'error');
+      setStartSelectedDate(new Date());
+      setEndSelectedDate(new Date());
+      return;
+    }
     setIsLoading(true);
     const fetchData = async () => {
       const { result, error } = await getDataPenjualan(
@@ -57,8 +88,8 @@ const TransaksiPenjualan = () => {
   }, [startSelectedDate, endSelectedDate]);
 
   return (
-    <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
-      <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
+    <div className='flex flex-col items-center h-screen w-full relative'>
+      <div className='mt-40 2xl:mt-44 w-full px-[100px] pb-20'>
         <div className='w-full flex flex-col'>
           <Tabs menus={penjualanMenus} />
           <div className='flex flex-col px-6 py-2 mt-5'>
@@ -74,9 +105,14 @@ const TransaksiPenjualan = () => {
                 selected={endSelectedDate}
                 onChange={handleEndDateChange}
               />
+              <Button
+                title={`Print`}
+                containerStyles='px-3 py-1 rounded-lg bg-[#5C25E7] text-white'
+                handleClick={() => handlePrint(salesData)}
+              />
             </div>
           </div>
-          <div className='bg-white min-h-[500px] max-h-[600px] overflow-hidden overflow-y-scroll rounded-lg mt-3 pb-10 shadow-md px-10 py-6'>
+          <div className='bg-white min-h-[500px] h-[500px] max-h-[500px] overflow-hidden overflow-y-scroll rounded-lg mt-3 pb-10 shadow-md px-10 pt-6'>
             <table className='table-fixed w-full text-center mt-5'>
               <thead>
                 <tr>
@@ -113,7 +149,7 @@ const TransaksiPenjualan = () => {
                       <td className='px-6 py-4'>
                         <Button
                           title='Detail'
-                          containerStyles='bg-[#5C25E7] rounded-lg text-white px-3 py-2 w-1/2 2xl:w-1/3'
+                          containerStyles='bg-[#5C25E7] rounded-lg text-white px-3 py-2 w-full lg:w-1/2 2xl:w-1/3'
                           handleClick={() => handleDetailAction(item)}
                         />
                       </td>

@@ -12,6 +12,12 @@ export interface ContextProviderProps {
   children: React.ReactNode;
 }
 
+export interface DashboardData {
+  totalRevenue: number;
+  totalTransactions: number;
+  totalItemsSold: number;
+}
+
 export interface resultRequest {
   code: number;
   message: any;
@@ -25,8 +31,10 @@ export interface Medicine {
   price: string;
   stock: number;
   image: string | null;
+  noBPOM: string;
   safetyStock?: number;
   isExistInProcurement?: boolean;
+  availableStatus?: string;
 }
 
 export interface Carts {

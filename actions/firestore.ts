@@ -26,6 +26,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 import {
   Carts,
+  DashboardData,
   Medicine,
   ProcurementData,
   SalesData,
@@ -81,26 +82,64 @@ export const getUserLogged = async (collection: string, id: string) => {
   return { userLogged, error };
 };
 
+export const getDashboardData = async (
+  startDate: Date,
+  endDate: Date
+): Promise<DashboardData> => {
+  const start = startOfDay(startDate);
+  const end = endOfDay(endDate);
+
+  const salesCollection = collection(db, penjualanCollection);
+  const salesQuery = query(
+    salesCollection,
+    where('tanggal', '>=', start),
+    where('tanggal', '<=', end)
+  );
+  const salesSnapshot = await getDocs(salesQuery);
+
+  let totalRevenue = 0;
+  let totalTransactions = 0;
+  let totalItemsSold = 0;
+
+  for (const doc of salesSnapshot.docs) {
+    const data = doc.data() as SalesData;
+    totalRevenue += data.totalPenjualan;
+    totalTransactions++;
+    totalItemsSold += data.totalItems;
+  }
+
+  return { totalRevenue, totalTransactions, totalItemsSold };
+};
+
 export const getMedicines = async (collectionName: string) => {
   let result: Medicine[] = [],
     error: Error | any = null;
 
-  const avgSales = await getAverageDailySalesByMedicine(6); //masih hardcode
-  const highestSales = await getHighestDailySalesByMedicine(6); //masih hardcode
+  const previousMonth = new Date().getMonth() - 1;
+
+  const avgSales = await getAverageDailySalesByMedicine(6);
+  const highestSales = await getHighestDailySalesByMedicine(6);
 
   let documentRef = query(collection(db, collectionName));
   try {
     let res = await getDocs(documentRef);
 
     for (const doc of res.docs) {
-      const medicineData = doc.data();
+      const medicineData = doc.data() as Medicine;
       const MAX = highestSales[medicineData.id] * LEAD_TIME_MAX;
       const AVG = avgSales[medicineData.id] * LEAD_TIME_AVG;
       const safetyStockCalculation = MAX - AVG;
+      const safetyStock = Math.ceil(safetyStockCalculation || 0);
 
       const isExistInProcurement = await checkMedicineExistsInProcurement(
         medicineData.id
       );
+
+      let availability = isExistInProcurement
+        ? 'Dipesan'
+        : medicineData.stock <= safetyStock
+        ? 'Terbatas'
+        : 'Tersedia';
 
       const medicine: Medicine = {
         id: medicineData.id,
@@ -108,8 +147,10 @@ export const getMedicines = async (collectionName: string) => {
         price: medicineData.price,
         stock: medicineData.stock,
         image: medicineData.image,
-        safetyStock: Math.ceil(safetyStockCalculation || 0),
+        noBPOM: medicineData.noBPOM,
+        safetyStock,
         isExistInProcurement,
+        availableStatus: availability,
       };
 
       result.push(medicine);
@@ -148,16 +189,14 @@ export const addMedicine = async (
   namaObat: string,
   harga: string,
   stock: number,
-  imgFile: File | null
+  imgFile: File | null,
+  noBPOM: string
 ) => {
   let result: String | any = null,
     error: Error | any = null;
 
   const obatCollectionRef = collection(db, obatCollection);
-  const obatQuery = query(
-    obatCollectionRef,
-    where('medicine_name', '==', namaObat)
-  );
+  const obatQuery = query(obatCollectionRef, where('noBPOM', '==', noBPOM));
 
   try {
     await runTransaction(db, async () => {
@@ -173,8 +212,9 @@ export const addMedicine = async (
         id: '',
         medicine_name: namaObat,
         price: harga,
-        stock,
+        stock: +stock,
         image: imageUrl,
+        noBPOM: noBPOM,
       };
       const newMedicineRef = await addDoc(obatCollectionRef, obatData);
 
@@ -532,6 +572,7 @@ export const createPengadaan = async (medicineData: Medicine, Qty: number) => {
         price: medicineData.price,
         stock: medicineData.stock,
         image: medicineData.image,
+        noBPOM: medicineData.noBPOM,
       },
       Qty,
       oldStock: medicineData.stock.toString(),

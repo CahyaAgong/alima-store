@@ -24,6 +24,7 @@ export default function RencanaPengadaan() {
     price: '',
     stock: 0,
     image: '',
+    noBPOM: '',
   };
 
   const [medicines, setMedicines] = useState<Medicine[]>([]);
@@ -148,10 +149,10 @@ export default function RencanaPengadaan() {
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
-      <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] w-full pb-20'>
         <div className='w-full flex flex-col'>
           <Tabs menus={pengadaanMenus} />
-          <div className='bg-white min-h-[600px] max-h-[700px] overflow-hidden overflow-y-scroll rounded-lg mt-10 pb-10 shadow-md p-6'>
+          <div className='bg-white min-h-[500px] h-[500px] max-h-[500px] overflow-hidden overflow-y-scroll rounded-lg mt-10 pb-10 shadow-md p-6'>
             <SearchBar
               inputStyles='rounded-md'
               searchIcon
@@ -192,19 +193,11 @@ export default function RencanaPengadaan() {
                         <td className='px-6 py-4'>
                           <StatusFlag
                             title={
-                              item
-                                ? item.isExistInProcurement
-                                  ? 'Dipesan'
-                                  : item.stock && item.safetyStock
-                                  ? item.stock >= item.safetyStock
-                                    ? 'Tersedia'
-                                    : item.stock < 1
-                                    ? 'Terbatas'
-                                    : 'Terbatas'
-                                  : 'Tersedia'
+                              item && item.availableStatus
+                                ? item.availableStatus
                                 : ''
                             }
-                            containerStyles='px-3 py-2 text-center rounded-full'
+                            containerStyles='px-1 py-1 lg:px-3 lg:py-2 text-center rounded-full text-xs lg:text-base'
                           />
                         </td>
                         <td>
@@ -222,7 +215,7 @@ export default function RencanaPengadaan() {
                             isDisabled={
                               loadProcurement === item.id ? true : false
                             }
-                            containerStyles={`rounded-lg text-white font-normal px-3 py-2 w-1/2 ${
+                            containerStyles={`rounded-lg text-white font-normal px-1 py-1 lg:px-3 lg:py-2 w-full lg:w-1/2 ${
                               item.isExistInProcurement
                                 ? 'bg-[#5C25E7]'
                                 : 'bg-[#F0653A]'

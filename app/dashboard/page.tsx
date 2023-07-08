@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 
 import { CustomDatePicker } from '@/components';
-import { ProcurementData, SalesData } from '@/types';
+import { DashboardData, ProcurementData, SalesData } from '@/types';
 import {
   getConfirmedProcurements,
+  getDashboardData,
   getDataPenjualan,
 } from '@/actions/firestore';
 import { showAlert } from '@/components/SweetAlert';
@@ -21,6 +22,11 @@ export default function Dashboard() {
 
   const [startSelectedDate, setStartSelectedDate] = useState<Date>(new Date());
   const [endSelectedDate, setEndSelectedDate] = useState<Date>(new Date());
+  const [summaryData, setSummaryData] = useState<DashboardData>({
+    totalRevenue: 0,
+    totalTransactions: 0,
+    totalItemsSold: 0,
+  });
 
   const handleStartDateChange = (date: Date) => {
     setStartSelectedDate(date);
@@ -28,6 +34,16 @@ export default function Dashboard() {
 
   const handleEndDateChange = (date: Date) => {
     setEndSelectedDate(date);
+  };
+
+  const summarySalesData = async () => {
+    const { totalRevenue, totalTransactions, totalItemsSold } =
+      await getDashboardData(startSelectedDate, endSelectedDate);
+    setSummaryData({
+      totalRevenue,
+      totalTransactions,
+      totalItemsSold,
+    });
   };
 
   const fetchDataSales = async () => {
@@ -63,14 +79,21 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (startSelectedDate > endSelectedDate) {
+      showAlert('Perhatian', 'Rentang tanggal salah!', 'error');
+      setStartSelectedDate(new Date());
+      setEndSelectedDate(new Date());
+      return;
+    }
+    summarySalesData();
     fetchDataSales();
     fetchDataProcurement();
   }, [startSelectedDate, endSelectedDate]);
 
   return (
-    <div className='flex flex-col items-center bg-[#FAFAFA] w-full h-screen'>
-      <div className='mt-44 max-w-screen-2xl px-[100px] w-full'>
-        <div className='flex flex-row items-center justify-between mb-5'>
+    <div className='flex flex-col items-center w-full h-screen'>
+      <div className='mt-40 2xl:mt-44 px-[50px] 2xl:px-[100px] pb-20 w-full max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl 2xl:max-w-screen-2xl'>
+        <div className='flex flex-col lg:flex-row items-center justify-between mb-5'>
           <h1 className='text-4xl font-bold'>Ringkasan</h1>
           <div className='flex flex-col'>
             <h4 className='text-black font-normal text-sm mb-1'>
@@ -89,13 +112,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className='flex flex-row justify-center items-center space-x-24 px-3 py-4 bg-white rounded-lg text-[#5C25E7] border border-[#F0653A]'>
+        <div className='flex flex-row justify-center items-center space-x-10 2xl:space-x-24 px-3 py-4 bg-white rounded-lg text-[#5C25E7] border border-[#F0653A]'>
           <div>
             <h2 className='text-sm mb-2'>Total Pendapatan</h2>
-            <div className='flex flex-row items-center space-x-3'>
+            <div className='flex flex-row items-center space-x-1 lg:space-x-3'>
               <span className='bg-[#F0653A] p-2 w-fit h-fit rounded-lg'>
                 <svg
-                  className='w-6 h-6'
+                  className='w-4 lg:w-6 h-4 lg:h-6'
                   viewBox='0 0 24 24'
                   fill='none'
                   xmlns='http://www.w3.org/2000/svg'
@@ -112,7 +135,9 @@ export default function Dashboard() {
                   />
                 </svg>
               </span>
-              <h3 className='text-4xl font-bold'>Rp 148.000</h3>
+              <h3 className='text-xl lg:text-2xl xl:text-4xl font-bold'>
+                {formatCurrency(summaryData.totalRevenue)}
+              </h3>
             </div>
           </div>
 
@@ -123,7 +148,7 @@ export default function Dashboard() {
             <div className='flex flex-row items-center space-x-3'>
               <span className='bg-[#F0653A] p-2 w-fit h-fit rounded-lg'>
                 <svg
-                  className='w-6 h-6'
+                  className='w-4 lg:w-6 h-4 lg:h-6'
                   viewBox='0 0 24 24'
                   fill='none'
                   xmlns='http://www.w3.org/2000/svg'
@@ -136,7 +161,9 @@ export default function Dashboard() {
                   />
                 </svg>
               </span>
-              <h3 className='text-4xl font-bold'>12 Pembelian</h3>
+              <h3 className='text-xl lg:text-2xl xl:text-4xl font-bold'>
+                {summaryData.totalTransactions} Pembelian
+              </h3>
             </div>
           </div>
 
@@ -147,7 +174,7 @@ export default function Dashboard() {
             <div className='flex flex-row items-center space-x-3'>
               <span className='bg-[#F0653A] p-2 w-fit h-fit rounded-lg'>
                 <svg
-                  className='w-6 h-6'
+                  className='w-4 lg:w-6 h-4 lg:h-6'
                   viewBox='0 0 24 24'
                   fill='none'
                   xmlns='http://www.w3.org/2000/svg'
@@ -166,22 +193,24 @@ export default function Dashboard() {
                   />
                 </svg>
               </span>
-              <h3 className='text-4xl font-bold'>20 Obat</h3>
+              <h3 className='text-xl lg:text-2xl xl:text-4xl font-bold'>
+                {summaryData.totalItemsSold} Obat
+              </h3>
             </div>
           </div>
         </div>
 
-        <div className='flex flex-row justify-center items-center px-10 py-8 space-x-4 min-h-[500px] h-[500px] max-h-[600px] overflow-hidden bg-white rounded-lg text-black border border-[#F0653A] mt-5'>
+        <div className='flex flex-row justify-center items-center px-1 lg:px-5 xl:px-10 py-8 space-x-4 min-h-[500px] h-[500px] max-h-[500px] overflow-hidden bg-white rounded-lg text-black border border-[#F0653A] mt-5'>
           <div className='flex flex-col w-1/2 h-full overflow-y-auto'>
             <h3 className='text-xl font-semibold text-center'>PENJUALAN</h3>
-            <table className='table-fixed w-full border-separate border-spacing-5'>
+            <table className='table-fixed w-full border-separate border-spacing-2 lg:border-spacing-5 text-base lg:text-xl'>
               <thead className='text-xl font-semibold'>
                 <tr>
                   <th>Tanggal</th>
                   <th>Total</th>
                 </tr>
               </thead>
-              <tbody className='text-center text-xl font-normal'>
+              <tbody className='text-center font-normal'>
                 {isFetching ? (
                   <tr>
                     <td colSpan={2}> Loading .... </td>
@@ -206,7 +235,7 @@ export default function Dashboard() {
 
           <div className='flex flex-col w-1/2 h-full overflow-y-auto'>
             <h3 className='text-xl font-semibold text-center'>PENGADAAN</h3>
-            <table className='table-fixed w-full border-separate border-spacing-5'>
+            <table className='table-fixed w-full border-separate border-spacing-2 lg:border-spacing-5 text-base lg:text-xl'>
               <thead className='text-xl font-semibold'>
                 <tr>
                   <th>Tanggal</th>
@@ -214,7 +243,7 @@ export default function Dashboard() {
                   <th>Qty</th>
                 </tr>
               </thead>
-              <tbody className='text-center text-xl font-normal'>
+              <tbody className='text-center font-normal'>
                 {isFetchingProcurement ? (
                   <tr>
                     <td colSpan={3}>Loading....</td>
@@ -226,7 +255,7 @@ export default function Dashboard() {
                         {format(item.procurementDate.toDate(), 'dd MMMM yyyy')}
                       </td>
                       <td>{item.medicine.medicine_name}</td>
-                      <td>{item.Qty + parseInt(item.oldStock)}</td>
+                      <td>{item.Qty}</td>
                     </tr>
                   ))
                 ) : (

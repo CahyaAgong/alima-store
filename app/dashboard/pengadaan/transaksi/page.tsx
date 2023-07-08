@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react';
 
-import { Button, CustomDatePicker, Modal, Tabs } from '@/components';
+import {
+  Button,
+  CustomDatePicker,
+  Modal,
+  PdfContent,
+  Tabs,
+} from '@/components';
 import { pengadaanMenus } from '@/constant/menus';
 import {
   getConfirmedProcurements,
@@ -13,22 +19,8 @@ import {
 import { showAlert } from '@/components/SweetAlert';
 import { ProcurementData } from '@/types';
 import { format } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
-
-// const initialProcurementData: ProcurementData = {
-//   uid: '',
-//   procurementDate: 0,
-//   medicine: {
-//     id: '',
-//     medicine_name: '',
-//     price: '',
-//     stock: 0,
-//     image: null
-//   },
-//   Qty: 0,
-//   oldStock: '',
-//   status: ''
-// }
+import { pdf } from '@react-pdf/renderer';
+import FileSaver from 'file-saver';
 
 export default function TransaksiPengadaan() {
   const [isFetching, setFetching] = useState<boolean>(false);
@@ -117,6 +109,22 @@ export default function TransaksiPengadaan() {
     }));
   };
 
+  const handlePrint = async (item: ProcurementData[]) => {
+    const blob = await pdf(
+      <PdfContent
+        data={item}
+        type='PNGDN'
+        startDate={startSelectedDate}
+        endDate={endSelectedDate}
+      />
+    ).toBlob();
+    const fileName = `Report Pengadaan - ${format(
+      startSelectedDate,
+      'dd MMMM yyyy'
+    )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
+    FileSaver.saveAs(blob, fileName);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setFetching(true);
@@ -145,12 +153,18 @@ export default function TransaksiPengadaan() {
         };
       }
     };
+    if (startSelectedDate > endSelectedDate) {
+      showAlert('Perhatian', 'Rentang tanggal salah!', 'error');
+      setStartSelectedDate(new Date());
+      setEndSelectedDate(new Date());
+      return;
+    }
     fetchData();
-  }, [startSelectedDate, endSelectedDate, isProceedData]);
+  }, [startSelectedDate, endSelectedDate]);
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
-      <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] w-full pb-20'>
         <div className='w-full flex flex-col'>
           <Tabs menus={pengadaanMenus} />
           <div className='flex flex-col px-6 py-2 mt-5'>
@@ -166,16 +180,21 @@ export default function TransaksiPengadaan() {
                 selected={endSelectedDate}
                 onChange={handleEndDateChange}
               />
+              <Button
+                title={`Print`}
+                containerStyles='px-3 py-1 rounded-lg bg-[#5C25E7] text-white'
+                handleClick={() => handlePrint(procurementData)}
+              />
             </div>
           </div>
-          <div className='bg-white min-h-[500px] max-h-[500px] overflow-hidden overflow-y-scroll rounded-lg mt-3 pb-10 shadow-md p-6'>
-            <table className='table-fixed w-full text-center mt-10'>
+          <div className='bg-white min-h-[500px] h-[500px] max-h-[500px] overflow-hidden overflow-y-scroll rounded-lg mt-3 pb-10 px-10 shadow-md p-6'>
+            <table className='table-fixed w-full text-center mt-5'>
               <thead>
                 <tr>
                   <th scope='col' className='px-6 py-3 w-auto'>
                     Tanggal
                   </th>
-                  <th scope='col' className='px-6 py-3 w-1/4 text-left'>
+                  <th scope='col' className='px-6 py-3 w-auto'>
                     Nama Obat
                   </th>
                   <th scope='col' className='px-6 py-3 w-auto'>
@@ -184,7 +203,7 @@ export default function TransaksiPengadaan() {
                   <th scope='col' className='px-6 py-3 w-auto'>
                     Stock
                   </th>
-                  <th scope='col' className='px-6 py-3 w-1/4'>
+                  <th scope='col' className='px-6 py-3 w-1/4 hidden'>
                     Aksi
                   </th>
                 </tr>
@@ -201,14 +220,14 @@ export default function TransaksiPengadaan() {
                       <td className='px-6 py-4'>
                         {format(item.procurementDate.toDate(), 'dd MMMM yyyy')}
                       </td>
-                      <td className='px-6 py-4 text-left'>
+                      <td className='px-6 py-4'>
                         {item.medicine.medicine_name}
                       </td>
                       <td className='px-6 py-4'>{item.Qty}</td>
                       <td className='px-6 py-4'>
                         {item.Qty + parseInt(item.oldStock)}
                       </td>
-                      <td className='px-6 py-4'>
+                      <td className='px-6 py-4 hidden'>
                         <Button
                           title='Edit'
                           containerStyles='bg-[#F0653A] rounded-lg text-white px-3 py-2 w-full'

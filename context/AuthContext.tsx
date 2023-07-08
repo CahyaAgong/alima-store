@@ -5,7 +5,7 @@ import { onAuthStateChanged, getAuth, User } from 'firebase/auth';
 import firebaseApp from '@/config/firebase';
 import { Navbar } from '@/components';
 import { LogOut } from '@/actions/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ContextProviderProps, User as UserType } from '@/types';
 import { getCookie, removeCookie } from '@/actions/cookie';
 
@@ -28,12 +28,26 @@ export const AuthContextProvider: React.FC<ContextProviderProps> = ({
   children,
 }) => {
   const router = useRouter();
+  const pathName = usePathname();
 
   // const [userLogin, setUserLogin] = React.useState<User | null>(null);
   const [userLogin, setUserLogin] = React.useState<UserType | undefined>(
     undefined
   );
+  const [isCookieLoaded, setIsCookieLoaded] = React.useState(false);
   const [loading, setLoading] = React.useState<boolean>(true);
+
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await LogOut();
+      setUserLogin(undefined);
+      removeCookie('userSession');
+      setLoading(false);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   // React.useEffect(() => {
   //   const unSubscribe = onAuthStateChanged(
@@ -58,42 +72,39 @@ export const AuthContextProvider: React.FC<ContextProviderProps> = ({
   // }, [router]);
 
   const getCookieData = async () => {
-    const cookie = await getCookie('userSession');
-    setUserLogin(cookie);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!userLogin) {
-      router.push('/');
-    } else {
-      router.push('/dashboard');
+    try {
+      const cookie = await getCookie('userSession');
+      if (cookie) {
+        setUserLogin(cookie);
+      }
+      setIsCookieLoaded(true);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error', error);
     }
-  }, [userLogin, router]);
+  };
 
   useEffect(() => {
     getCookieData();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await LogOut();
-      setUserLogin(undefined);
-      removeCookie('userSession');
-      setLoading(false);
-    } catch (error) {
-      console.error('Error logging out:', error);
+  useEffect(() => {
+    if (isCookieLoaded) {
+      if (!userLogin && pathName !== '/') {
+        router.push('/');
+      } else if (userLogin && pathName === '/') {
+        router.push('/dashboard');
+      }
     }
-  };
+  }, [userLogin, isCookieLoaded]);
 
   if (loading) return <div>Loading....</div>;
 
   return (
     <AuthContext.Provider value={{ userLogin, setUserLogin }}>
       <div className='flex flex-col justify-center items-center bg-[#FAFAFA]'>
-        {userLogin && <Navbar handleClick={handleLogout} />}
-        {children}
+        {userLogin && !loading ? <Navbar handleClick={handleLogout} /> : ''}
+        {!loading && children}
       </div>
     </AuthContext.Provider>
   );

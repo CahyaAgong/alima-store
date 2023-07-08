@@ -3,7 +3,14 @@ import { Medicine, Carts } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { formatCurrency } from '@/utils/helper';
 
-const Medicine = ({ id, medicine_name, price, stock, image }: Medicine) => {
+const Medicine = ({
+  id,
+  medicine_name,
+  price,
+  stock,
+  image,
+  noBPOM,
+}: Medicine) => {
   const {
     addToCart,
     removeFromCart,
@@ -29,7 +36,7 @@ const Medicine = ({ id, medicine_name, price, stock, image }: Medicine) => {
     } else {
       if (stock === 0) return;
       addToCart({
-        MedicineInCart: { id, medicine_name, price, stock, image },
+        MedicineInCart: { id, medicine_name, price, stock, image, noBPOM },
         totalMedicine: 1,
       });
     }

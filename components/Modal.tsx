@@ -18,7 +18,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
         onClick={handleContentClick}
         className='z-10 w-10/12 md:w-1/2 xl:w-1/3'
       >
-        <div className='bg-white rounded-lg shadow-lg w-full'>{children}</div>
+        <div className='bg-white rounded-lg shadow-lg w-full overflow-hidden overflow-y-auto'>
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -20,6 +20,15 @@ import { Medicine } from '@/types';
 import { showAlert } from '@/components/SweetAlert';
 import { formatCurrency } from '@/utils/helper';
 
+const medicineInitialValue: Medicine = {
+  id: '',
+  medicine_name: '',
+  price: '',
+  stock: 0,
+  image: null,
+  noBPOM: '',
+};
+
 export default function Obat() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [isFetching, setFetching] = useState<boolean>(false);
@@ -31,13 +40,7 @@ export default function Obat() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isProceedData, setProceedData] = useState<boolean>(false);
 
-  const [formValues, setFormValues] = useState<Medicine>({
-    id: '',
-    medicine_name: '',
-    price: '',
-    stock: 0,
-    image: null,
-  });
+  const [formValues, setFormValues] = useState<Medicine>(medicineInitialValue);
 
   const handleOpenModal = (
     editMode: boolean = false,
@@ -45,24 +48,26 @@ export default function Obat() {
     name: string = '',
     price: string = '',
     stock: number = 0,
-    img: string | null = null
+    img: string | null = null,
+    noBPOM: string = ''
   ) => {
     setModalOpen(true);
     if (editMode) {
       setIsEdit(true);
       setMeidicineId(id);
-      setFormValues({ id: id, medicine_name: name, price, stock, image: img });
+      setFormValues({
+        id: id,
+        medicine_name: name,
+        price,
+        stock,
+        image: img,
+        noBPOM: noBPOM,
+      });
     }
   };
 
   const clearForm = () => {
-    setFormValues({
-      id: '',
-      medicine_name: '',
-      price: '',
-      stock: 0,
-      image: null,
-    });
+    setFormValues(medicineInitialValue);
     setImage(null);
   };
 
@@ -94,11 +99,11 @@ export default function Obat() {
     setLoading(true);
     setProceedData(true);
 
-    const { medicine_name, price, stock } = formValues;
+    const { medicine_name, price, stock, noBPOM } = formValues;
     if (isEdit) {
       await handleUpdateMedicine(medicineId);
     } else {
-      await handleAddMedicine(medicine_name, price, stock);
+      await handleAddMedicine(medicine_name, price, stock, noBPOM);
     }
   };
 
@@ -123,23 +128,12 @@ export default function Obat() {
           setProceedData(true);
           const { result, error } = await deleteMedicine(medicineId);
           if (error) {
-            mySwal.fire({
-              title: 'Error',
-              text: `Terjadi Error ${error}`,
-              icon: 'error',
-              showCloseButton: false,
-            });
+            showAlert('Error', error, 'error');
+            setLoading(false);
             return;
           }
 
-          mySwal.fire({
-            title: 'Sukses',
-            text: result,
-            icon: 'success',
-            iconColor: '#47C3A6',
-            showConfirmButton: false,
-            showCloseButton: false,
-          });
+          showAlert('Sukses', result, 'success');
           setLoading(false);
         }
       });
@@ -148,13 +142,21 @@ export default function Obat() {
   const handleAddMedicine = async (
     namaObat: string,
     harga: string,
-    stock: number
+    stock: number,
+    noBPOM: string
   ) => {
-    if (!namaObat || !harga || !stock) {
+    if (!namaObat || !harga || !stock || !noBPOM) {
       showAlert('Error', 'form harus diisi semua', 'error');
+      setLoading(false);
       return;
     }
-    const { result, error } = await addMedicine(namaObat, harga, stock, image);
+    const { result, error } = await addMedicine(
+      namaObat,
+      harga,
+      stock,
+      image,
+      noBPOM
+    );
     if (error) {
       showAlert('Error', error, 'error');
       setModalOpen(true);
@@ -173,8 +175,9 @@ export default function Obat() {
       id: medicineId,
       medicine_name: formValues.medicine_name,
       price: formValues.price,
-      stock: formValues.stock,
+      stock: +formValues.stock,
       image: formValues.image,
+      noBPOM: formValues.noBPOM,
     };
     const { result, error } = await updateMedicine(
       medicineId,
@@ -209,22 +212,23 @@ export default function Obat() {
       }
       setMedicines(result);
       setFetching(false);
+
+      if (isProceedData) {
+        const unsubscribe = subscribeToCollectionChanges(
+          'obat',
+          (updatedMedicines: Medicine[]) => {
+            // if (!isFetching) setMedicines(updatedMedicines);
+            setMedicines(updatedMedicines);
+          }
+        );
+        setProceedData(false);
+        return () => {
+          unsubscribeFromCollectionChanges(unsubscribe);
+        };
+      }
     };
 
     fetchData();
-
-    if (isProceedData) {
-      const unsubscribe = subscribeToCollectionChanges(
-        'obat',
-        (updatedMedicines: Medicine[]) => {
-          if (!isFetching) setMedicines(updatedMedicines);
-        }
-      );
-      setProceedData(false);
-      return () => {
-        unsubscribeFromCollectionChanges(unsubscribe);
-      };
-    }
   }, [isProceedData]);
 
   const filteredMedicines = searchQuery
@@ -235,7 +239,7 @@ export default function Obat() {
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen'>
-      <div className='mt-44 max-w-screen-2xl w-full px-[100px]'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] w-full pb-20'>
         <div className='flex flex-row space-x-5 w-full'>
           <SearchBar
             containerStyles='w-[85%] rounded-lg'
@@ -250,13 +254,14 @@ export default function Obat() {
           />
         </div>
 
-        <div className='w-full mt-12 bg-white rounded-lg px-3 py-0 min-h-[500px] max-h-[600px] overflow-hidden overflow-y-scroll shadow-md'>
+        <div className='w-full mt-12 bg-white rounded-lg px-3 py-0 min-h-[500px] h-[500px] max-h-[500px] overflow-hidden overflow-y-scroll shadow-md'>
           <table
             className='table-fixed w-full text-black text-center '
             style={{ borderCollapse: 'separate', borderSpacing: '0 30px' }}
           >
             <thead className=''>
               <tr className=''>
+                <th>No BPOM</th>
                 <th>Nama Obat</th>
                 <th>Harga</th>
                 <th>Safety Stock</th>
@@ -268,12 +273,13 @@ export default function Obat() {
             <tbody>
               {isFetching ? (
                 <tr>
-                  <td colSpan={5}>Loading.....</td>
+                  <td colSpan={6}>Loading.....</td>
                 </tr>
               ) : filteredMedicines.length > 0 ? (
                 filteredMedicines.map(medicine => {
                   return (
                     <tr key={medicine.id}>
+                      <td>{medicine.noBPOM}</td>
                       <td>{medicine.medicine_name}</td>
                       <td>{formatCurrency(parseInt(medicine.price))}</td>
                       <td>{medicine.safetyStock}</td>
@@ -289,7 +295,8 @@ export default function Obat() {
                               medicine.medicine_name,
                               medicine.price,
                               medicine.stock,
-                              medicine.image
+                              medicine.image,
+                              medicine.noBPOM
                             )
                           }
                         />
@@ -304,7 +311,7 @@ export default function Obat() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={5}>tidak ada data!</td>
+                  <td colSpan={6}>tidak ada data!</td>
                 </tr>
               )}
             </tbody>
@@ -342,6 +349,23 @@ export default function Obat() {
                   onSubmit={handleSubmitMedicine}
                   className='mt-3 flex flex-col space-y-3'
                 >
+                  <div className='mt-5 flex flex-col space-y-3'>
+                    <label
+                      htmlFor='noBPOM'
+                      className='text-base text-black font-bold'
+                    >
+                      No BPOM
+                    </label>
+                    <input
+                      name='noBPOM'
+                      type='text'
+                      placeholder='No BPOM'
+                      className='outline-none w-full border border-[#5C25E7] rounded-lg px-3 py-2 text-sm text-black'
+                      value={formValues.noBPOM}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
                   <div className='mt-5 flex flex-col space-y-3'>
                     <label
                       htmlFor='medicine_name'
