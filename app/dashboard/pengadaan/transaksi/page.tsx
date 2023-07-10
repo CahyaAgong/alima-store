@@ -164,7 +164,7 @@ export default function TransaksiPengadaan() {
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
-      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] w-full pb-20'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] 2xl:px-[200px] w-full pb-20'>
         <div className='w-full flex flex-col'>
           <Tabs menus={pengadaanMenus} />
           <div className='flex flex-col px-6 py-2 mt-5'>

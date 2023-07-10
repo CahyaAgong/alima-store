@@ -104,13 +104,18 @@ export default function RencanaPengadaan() {
     setLoading(true);
     setProceedData(true);
 
-    if (medicineItem.isExistInProcurement) {
-      await handleUpdateProcurement();
-    } else {
-      await handleAddProcurement();
+    try {
+      if (medicineItem.isExistInProcurement) {
+        await handleUpdateProcurement();
+      } else {
+        await handleAddProcurement();
+      }
+    } catch (error) {
+      console.log(`Error : ${error}`);
+    } finally {
+      setLoading(false);
+      handleCloseModal();
     }
-    setLoading(false);
-    handleCloseModal();
   };
 
   useEffect(() => {
@@ -149,7 +154,7 @@ export default function RencanaPengadaan() {
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen w-full'>
-      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] w-full pb-20'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] 2xl:px-[200px] w-full pb-20'>
         <div className='w-full flex flex-col'>
           <Tabs menus={pengadaanMenus} />
           <div className='bg-white min-h-[500px] h-[500px] max-h-[500px] overflow-hidden overflow-y-scroll rounded-lg mt-10 pb-10 shadow-md p-6'>
@@ -163,7 +168,7 @@ export default function RencanaPengadaan() {
             <table className='table-fixed w-full text-center mt-10'>
               <thead>
                 <tr>
-                  <th scope='col' className='px-6 py-3 w-1/3 text-left'>
+                  <th scope='col' className='px-6 py-3 w-1/4 text-left'>
                     Nama Obat
                   </th>
                   <th scope='col' className='px-6 py-3 w-auto'>
@@ -171,6 +176,9 @@ export default function RencanaPengadaan() {
                   </th>
                   <th scope='col' className='px-6 py-3 w-auto'>
                     Stock
+                  </th>
+                  <th scope='col' className='px-6 py-3 w-auto'>
+                    Safety Stock
                   </th>
                   <th scope='col' className='px-6 py-3 w-1/4'>
                     Aksi
@@ -181,7 +189,7 @@ export default function RencanaPengadaan() {
               <tbody className='font-semibold'>
                 {isFetching ? (
                   <tr>
-                    <td colSpan={5}>Loading...</td>
+                    <td colSpan={6}>Loading...</td>
                   </tr>
                 ) : filteredMedicines.length > 0 ? (
                   filteredMedicines.map(item => {
@@ -203,6 +211,7 @@ export default function RencanaPengadaan() {
                         <td>
                           <span>{item?.stock ?? 0}</span>
                         </td>
+                        <td>{item?.safetyStock ?? 0}</td>
                         <td>
                           <Button
                             title={
@@ -228,7 +237,7 @@ export default function RencanaPengadaan() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={5}>Tidak ada data!</td>
+                    <td colSpan={6}>Tidak ada data!</td>
                   </tr>
                 )}
               </tbody>

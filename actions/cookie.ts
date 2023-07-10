@@ -1,12 +1,12 @@
 import { User } from '@/types';
 import Cookies from 'js-cookie';
 
-// // Set cookie
+// // Set cookie belum pake promise/async
 // export const setCookie = async (name: string, value: User, options: object = {}) => {
 //   Cookies.set(name, JSON.stringify(value), options);
 // };
 
-// // Get cookie
+// // Get cookie belum pake promise/async
 // export const getCookie = async (name: string): Promise<User | undefined> => {
 //   const cookieValue = Cookies.get(name);
 //   if (cookieValue) {

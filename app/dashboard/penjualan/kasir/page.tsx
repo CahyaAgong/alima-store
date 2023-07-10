@@ -33,15 +33,22 @@ const Kasir = () => {
 
   const handleCreatePenjualan = async () => {
     setIsLoading(true);
-    const { result, error } = await createPenjualan(cart);
-    if (error) {
-      showAlert('Terjadi Kesalaahn', error, 'error');
+    try {
+      const { result, error } = await createPenjualan(cart);
+      const { code, status, message } = result;
+      if (error) {
+        showAlert('Terjadi Kesalahan', error, 'error');
+        setIsLoading(false);
+        return;
+      }
+      showAlert('Sukses', message, 'success');
+    } catch (error) {
+      console.error(`Error : ${error}`);
+    } finally {
+      purgeCart();
       setIsLoading(false);
+      handleClose();
     }
-    showAlert('Sukses', result.message, 'success');
-    purgeCart();
-    handleClose();
-    setIsLoading(false);
   };
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -98,7 +105,7 @@ const Kasir = () => {
 
   return (
     <div className='flex flex-col items-center h-screen w-full'>
-      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] pb-20 w-full'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] 2xl:px-[200px] pb-20 w-full'>
         <div className='w-full flex flex-col'>
           <Tabs menus={penjualanMenus} />
           <div className='flex flex-row min-h-[500px] h-[500px] max-h-[500px] space-x-5'>

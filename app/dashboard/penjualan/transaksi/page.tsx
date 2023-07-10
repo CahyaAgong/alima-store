@@ -89,7 +89,7 @@ const TransaksiPenjualan = () => {
 
   return (
     <div className='flex flex-col items-center h-screen w-full relative'>
-      <div className='mt-40 2xl:mt-44 w-full px-[100px] pb-20'>
+      <div className='mt-40 2xl:mt-44 w-full px-[100px] 2xl:px-[200px] pb-20'>
         <div className='w-full flex flex-col'>
           <Tabs menus={penjualanMenus} />
           <div className='flex flex-col px-6 py-2 mt-5'>

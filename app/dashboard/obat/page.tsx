@@ -96,14 +96,22 @@ export default function Obat() {
     event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
+    const { medicine_name, price, stock, noBPOM } = formValues;
+
     setLoading(true);
     setProceedData(true);
 
-    const { medicine_name, price, stock, noBPOM } = formValues;
-    if (isEdit) {
-      await handleUpdateMedicine(medicineId);
-    } else {
-      await handleAddMedicine(medicine_name, price, stock, noBPOM);
+    try {
+      if (isEdit) {
+        await handleUpdateMedicine(medicineId);
+      } else {
+        await handleAddMedicine(medicine_name, price, stock, noBPOM);
+      }
+    } catch (error) {
+      console.error(`Error : ${error}`);
+    } finally {
+      setLoading(false);
+      handleCloseModal();
     }
   };
 
@@ -159,15 +167,12 @@ export default function Obat() {
     );
     if (error) {
       showAlert('Error', error, 'error');
-      setModalOpen(true);
       setLoading(false);
+      setModalOpen(true);
       return;
     }
 
     showAlert('Sukses', result, 'success');
-    clearForm();
-    setModalOpen(false);
-    setLoading(false);
   };
 
   const handleUpdateMedicine = async (medicineId: string) => {
@@ -186,15 +191,12 @@ export default function Obat() {
     );
     if (error) {
       showAlert('Error', error, 'error');
-      setModalOpen(true);
       setLoading(false);
+      setModalOpen(true);
       return;
     }
 
-    showAlert('Sukses', result);
-    clearForm();
-    setLoading(false);
-    handleCloseModal();
+    showAlert('Sukses', result, 'success');
   };
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -239,7 +241,7 @@ export default function Obat() {
 
   return (
     <div className='flex flex-col items-center bg-[#FAFAFA] h-screen'>
-      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] w-full pb-20'>
+      <div className='mt-40 2xl:mt-44 px-[20px] lg:px-[40px] xl:px-[100px] 2xl:px-[200px] w-full pb-20'>
         <div className='flex flex-row space-x-5 w-full'>
           <SearchBar
             containerStyles='w-[85%] rounded-lg'
@@ -264,7 +266,7 @@ export default function Obat() {
                 <th>No BPOM</th>
                 <th>Nama Obat</th>
                 <th>Harga</th>
-                <th>Safety Stock</th>
+                {/* <th>Safety Stock</th> */}
                 <th>Stock</th>
                 <th>Aksi</th>
               </tr>
@@ -273,7 +275,7 @@ export default function Obat() {
             <tbody>
               {isFetching ? (
                 <tr>
-                  <td colSpan={6}>Loading.....</td>
+                  <td colSpan={5}>Loading.....</td>
                 </tr>
               ) : filteredMedicines.length > 0 ? (
                 filteredMedicines.map(medicine => {
@@ -282,7 +284,7 @@ export default function Obat() {
                       <td>{medicine.noBPOM}</td>
                       <td>{medicine.medicine_name}</td>
                       <td>{formatCurrency(parseInt(medicine.price))}</td>
-                      <td>{medicine.safetyStock}</td>
+                      {/* <td>{medicine.safetyStock}</td> */}
                       <td>{medicine.stock}</td>
                       <td>
                         <Button
@@ -311,7 +313,7 @@ export default function Obat() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6}>tidak ada data!</td>
+                  <td colSpan={5}>tidak ada data!</td>
                 </tr>
               )}
             </tbody>
