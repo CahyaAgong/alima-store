@@ -49,6 +49,7 @@ export interface CartContextProps {
   removeFromCart: (medicine: Carts) => void;
   increaseQuantity: (medicine: Carts) => void;
   decreaseQuantity: (medicine: Carts) => void;
+  updateMedicineInCart: (medicine: Carts) => void;
   purgeCart: () => void;
 }
 

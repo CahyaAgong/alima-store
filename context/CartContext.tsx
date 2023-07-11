@@ -14,6 +14,7 @@ const CartContext = createContext<CartContextProps>({
   removeFromCart: () => {},
   increaseQuantity: () => {},
   decreaseQuantity: () => {},
+  updateMedicineInCart: () => {},
   purgeCart: () => {},
 });
 
@@ -68,6 +69,17 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     setCart([]);
   };
 
+  const updateMedicineInCart = (Medicine: Carts) => {
+    setCart(prevCart =>
+      prevCart.map(item =>
+        item.MedicineInCart.medicine_name ===
+        Medicine.MedicineInCart.medicine_name
+          ? Medicine
+          : item
+      )
+    );
+  };
+
   const value: CartContextProps = {
     cart,
     addToCart,
@@ -75,6 +87,7 @@ const CartProvider = ({ children }: PropsWithChildren) => {
     increaseQuantity,
     decreaseQuantity,
     purgeCart,
+    updateMedicineInCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

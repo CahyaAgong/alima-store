@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { Medicine, Carts } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { formatCurrency } from '@/utils/helper';
+import { ChangeEvent, useState } from 'react';
 
 const Medicine = ({
   id,
@@ -16,17 +17,30 @@ const Medicine = ({
     removeFromCart,
     increaseQuantity,
     decreaseQuantity,
+    updateMedicineInCart,
     cart,
   } = useCart();
   const existingMedicine = cart.find(
     item => item.MedicineInCart.medicine_name === medicine_name
   );
-  const totalMedicine = existingMedicine?.totalMedicine || 0;
+  const [totalMedicine, setTotalMedicine] = useState<number>(
+    existingMedicine?.totalMedicine || 0
+  );
+  const [isInputExceeded, setIsInputExceeded] = useState<boolean>(false);
+
+  const updateQuantity = (medicine: Carts, newQuantity: number) => {
+    const updatedMedicine = {
+      ...medicine,
+      totalMedicine: newQuantity,
+    };
+    updateMedicineInCart(updatedMedicine);
+  };
 
   const handleMinusClick = () => {
     if (totalMedicine < 0 || !existingMedicine) return;
     if (totalMedicine === 1) removeFromCart(existingMedicine);
     decreaseQuantity(existingMedicine);
+    setTotalMedicine(prevTotal => prevTotal - 1);
   };
 
   const handleAddClick = () => {
@@ -37,8 +51,36 @@ const Medicine = ({
       if (stock === 0) return;
       addToCart({
         MedicineInCart: { id, medicine_name, price, stock, image, noBPOM },
-        totalMedicine: 1,
+        totalMedicine: totalMedicine + 1,
       });
+    }
+    setTotalMedicine(prevTotal => prevTotal + 1);
+  };
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const inputVal: number = parseInt(e.target.value);
+    const numericRegex = /^[0-9]*$/;
+    if (
+      numericRegex.test(inputVal.toString()) &&
+      inputVal >= 0 &&
+      inputVal <= stock
+    ) {
+      setTotalMedicine(inputVal);
+      if (existingMedicine && inputVal === 0) removeFromCart(existingMedicine);
+      if (existingMedicine) updateQuantity(existingMedicine, inputVal);
+      if (inputVal > 0)
+        addToCart({
+          MedicineInCart: { id, medicine_name, price, stock, image, noBPOM },
+          totalMedicine: inputVal,
+        });
+    } else {
+      if (existingMedicine) removeFromCart(existingMedicine);
+      setTotalMedicine(0);
+
+      setIsInputExceeded(true); // Set status melebihi inputan
+      setTimeout(() => {
+        setIsInputExceeded(false); // Set status kembali normal setelah beberapa waktu
+      }, 2000); // Ubah sesuai kebutuhan Anda
     }
   };
 
@@ -57,7 +99,14 @@ const Medicine = ({
         <div className='flex flex-col'>
           <h3 className='font-medium'>{medicine_name}</h3>
           <span
-            className={`font-normal text-sm ${stock === 0 && `text-[#F03A3A]`}`}
+            className={`font-normal text-sm ${
+              stock === 0 && `text-[#F03A3A]`
+            } ${
+              isInputExceeded
+                ? 'text-[#F03A3A] font-semibold animate-pulse'
+                : ''
+            }`}
+            style={{ animationDuration: '0.5s' }}
           >
             {stock === 0 ? `Stock Habis` : `Stock : ${stock}`}
           </span>
@@ -92,7 +141,15 @@ const Medicine = ({
           </svg>
         </button>
 
-        <h5 className='font-medium text-lg'>{totalMedicine}</h5>
+        {/* <h5 className='font-medium text-lg'>{totalMedicine}</h5> */}
+        <input
+          type='text'
+          className={`w-12 border border-gray-300 rounded-md text-center ${
+            isInputExceeded ? 'text-[#F03A3A]' : ''
+          }`}
+          value={totalMedicine}
+          onChange={handleInputChange}
+        />
 
         <button
           type='button'

@@ -8,6 +8,7 @@ import CustomDatePicker from './DatePicker';
 import Medicine from './Medicine';
 import FileUploader from './FileUploader';
 import PdfContent from './PdfContent';
+import Loading from './Loading';
 
 export {
   Navbar,
@@ -20,4 +21,5 @@ export {
   Medicine,
   FileUploader,
   PdfContent,
+  Loading,
 };

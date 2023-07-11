@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { onAuthStateChanged, getAuth, User } from 'firebase/auth';
 import firebaseApp from '@/config/firebase';
-import { Navbar } from '@/components';
+import { Loading, Navbar } from '@/components';
 import { LogOut } from '@/actions/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { ContextProviderProps, User as UserType } from '@/types';
@@ -38,14 +38,15 @@ export const AuthContextProvider: React.FC<ContextProviderProps> = ({
   const [loading, setLoading] = React.useState<boolean>(true);
 
   const handleLogout = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      await LogOut();
       setUserLogin(undefined);
       removeCookie('userSession');
-      setLoading(false);
     } catch (error) {
       console.error('Error logging out:', error);
+    } finally {
+      await LogOut();
+      setLoading(false);
     }
   };
 
@@ -98,7 +99,7 @@ export const AuthContextProvider: React.FC<ContextProviderProps> = ({
     }
   }, [userLogin, isCookieLoaded]);
 
-  if (loading) return <div>Loading....</div>;
+  if (loading) return <Loading />;
 
   return (
     <AuthContext.Provider value={{ userLogin, setUserLogin }}>
