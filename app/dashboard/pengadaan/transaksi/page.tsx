@@ -19,7 +19,7 @@ import {
 import { showAlert } from '@/components/SweetAlert';
 import { ProcurementData } from '@/types';
 import { format } from 'date-fns';
-import { pdf } from '@react-pdf/renderer';
+import { PDFViewer, pdf } from '@react-pdf/renderer';
 import FileSaver from 'file-saver';
 
 export default function TransaksiPengadaan() {
@@ -31,6 +31,7 @@ export default function TransaksiPengadaan() {
   const [startSelectedDate, setStartSelectedDate] = useState<Date>(new Date());
   const [endSelectedDate, setEndSelectedDate] = useState<Date>(new Date());
   const [procurementId, setProcurementId] = useState<string>('');
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [formSubmit, setFormSubmit] = useState<{
     date: Date;
     medicine_id: string;
@@ -110,19 +111,32 @@ export default function TransaksiPengadaan() {
   };
 
   const handlePrint = async (item: ProcurementData[]) => {
-    const blob = await pdf(
-      <PdfContent
-        data={item}
-        type='PNGDN'
-        startDate={startSelectedDate}
-        endDate={endSelectedDate}
-      />
-    ).toBlob();
-    const fileName = `Report Pengadaan - ${format(
-      startSelectedDate,
-      'dd MMMM yyyy'
-    )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
-    FileSaver.saveAs(blob, fileName);
+    // const blob = await pdf(
+    //   <PdfContent
+    //     data={item}
+    //     type='PNGDN'
+    //     startDate={startSelectedDate}
+    //     endDate={endSelectedDate}
+    //   />
+    // ).toBlob();
+    // const fileName = `Report Pengadaan - ${format(
+    //   startSelectedDate,
+    //   'dd MMMM yyyy'
+    // )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
+    // FileSaver.saveAs(blob, fileName);
+    handleButtonClick();
+  };
+
+  const handleButtonClick = () => {
+    setShowPDFViewer(true);
+  };
+
+  const handleOutsideClick = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>
+  ) => {
+    if ((event.target as HTMLDivElement).classList.contains('outside-click')) {
+      setShowPDFViewer(false);
+    }
   };
 
   useEffect(() => {
@@ -333,6 +347,22 @@ export default function TransaksiPengadaan() {
           </span>
         </div>
       </Modal>
+
+      {showPDFViewer && !isLoading && (
+        <div
+          className='outside-click w-full absolute z-50 top-20 left-1/4'
+          onClick={e => handleOutsideClick(e)}
+        >
+          <PDFViewer width='1000' height='800'>
+            <PdfContent
+              data={procurementData}
+              type='PNGDN'
+              startDate={startSelectedDate}
+              endDate={endSelectedDate}
+            />
+          </PDFViewer>
+        </div>
+      )}
     </div>
   );
 }

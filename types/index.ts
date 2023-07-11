@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import React, { ChangeEvent, MouseEventHandler } from 'react';
+import React, { MouseEventHandler } from 'react';
 
 export interface User {
   email: string;

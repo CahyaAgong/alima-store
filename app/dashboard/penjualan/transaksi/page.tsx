@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { getDataPenjualan } from '@/actions/firestore';
 import {
@@ -16,7 +16,7 @@ import { SalesData } from '@/types';
 import { formatCurrency } from '@/utils/helper';
 import { format } from 'date-fns';
 
-import { pdf } from '@react-pdf/renderer';
+import { PDFViewer, pdf } from '@react-pdf/renderer';
 import FileSaver from 'file-saver';
 
 const TransaksiPenjualan = () => {
@@ -157,7 +157,7 @@ const TransaksiPenjualan = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4}>tidak ada data</td>
+                    <td colSpan={4}>Tidak ada data..</td>
                   </tr>
                 )}
               </tbody>
