@@ -85,7 +85,8 @@ export default function RencanaPengadaan() {
       const procurementData = await getProcurementByMedicineId(medicineItem.id);
       if (procurementData) {
         const { result, error } = await updateProcurementStatus(
-          procurementData.uid
+          procurementData.uid,
+          parseInt(Qty)
         );
         if (error) {
           showAlert('Error', error, 'error');
@@ -121,7 +122,9 @@ export default function RencanaPengadaan() {
   useEffect(() => {
     setFecthing(true);
     const fetchData = async () => {
-      const { result, error } = await getMedicines('obat');
+      const { result, error } = await getMedicines('obat', {
+        sortByLimitedStatus: true,
+      });
       if (error) {
         showAlert('error', error, 'error');
         setFecthing(false);

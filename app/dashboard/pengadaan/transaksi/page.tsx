@@ -111,20 +111,19 @@ export default function TransaksiPengadaan() {
   };
 
   const handlePrint = async (item: ProcurementData[]) => {
-    // const blob = await pdf(
-    //   <PdfContent
-    //     data={item}
-    //     type='PNGDN'
-    //     startDate={startSelectedDate}
-    //     endDate={endSelectedDate}
-    //   />
-    // ).toBlob();
-    // const fileName = `Report Pengadaan - ${format(
-    //   startSelectedDate,
-    //   'dd MMMM yyyy'
-    // )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
-    // FileSaver.saveAs(blob, fileName);
-    handleButtonClick();
+    const blob = await pdf(
+      <PdfContent
+        data={item}
+        type='PNGDN'
+        startDate={startSelectedDate}
+        endDate={endSelectedDate}
+      />
+    ).toBlob();
+    const fileName = `Report Pengadaan - ${format(
+      startSelectedDate,
+      'dd MMMM yyyy'
+    )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
+    FileSaver.saveAs(blob, fileName);
   };
 
   const handleButtonClick = () => {

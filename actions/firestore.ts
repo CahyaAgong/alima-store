@@ -111,7 +111,10 @@ export const getDashboardData = async (
   return { totalRevenue, totalTransactions, totalItemsSold };
 };
 
-export const getMedicines = async (collectionName: string) => {
+export const getMedicines = async (
+  collectionName: string,
+  sortOptions?: { sortByLimitedStatus?: boolean; sortByPrice?: 'asc' | 'desc' }
+) => {
   let result: Medicine[] = [],
     error: Error | any = null;
 
@@ -154,6 +157,35 @@ export const getMedicines = async (collectionName: string) => {
       };
 
       result.push(medicine);
+    }
+    if (sortOptions) {
+      if (sortOptions.sortByLimitedStatus) {
+        result.sort((a, b) => {
+          if (
+            a.availableStatus === 'Terbatas' &&
+            b.availableStatus !== 'Terbatas'
+          ) {
+            return -1;
+          } else if (
+            a.availableStatus !== 'Terbatas' &&
+            b.availableStatus === 'Terbatas'
+          ) {
+            return 1;
+          }
+          return 0;
+        });
+      }
+
+      if (sortOptions.sortByPrice) {
+        result.sort((a, b) => {
+          if (sortOptions.sortByPrice === 'asc') {
+            return parseInt(a.price) - parseInt(b.price);
+          } else if (sortOptions.sortByPrice === 'desc') {
+            return parseInt(b.price) - parseInt(a.price);
+          }
+          return 0;
+        });
+      }
     }
   } catch (err) {
     error = err;
@@ -651,7 +683,10 @@ export const getProcurementById = async (procurementId: string) => {
   return procurementData;
 };
 
-export const updateProcurementStatus = async (procurementId: string) => {
+export const updateProcurementStatus = async (
+  procurementId: string,
+  qty: number
+) => {
   let result: resultRequest | null = null;
   let error: any = null;
   try {
@@ -659,6 +694,7 @@ export const updateProcurementStatus = async (procurementId: string) => {
 
     await updateDoc(procurementRef, {
       procurementDate: Timestamp.now(),
+      Qty: +qty,
       status: 'Konfirmasi',
     });
 
