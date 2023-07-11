@@ -165,12 +165,22 @@ export const getMedicines = async (
             a.availableStatus === 'Terbatas' &&
             b.availableStatus !== 'Terbatas'
           ) {
-            return -1;
+            return -1; // a (Terbatas) dianggap lebih kecil dari b (Bukan Terbatas)
           } else if (
             a.availableStatus !== 'Terbatas' &&
             b.availableStatus === 'Terbatas'
           ) {
-            return 1;
+            return 1; // a (Bukan Terbatas) dianggap lebih besar dari b (Terbatas)
+          } else if (
+            a.availableStatus === 'Dipesan' &&
+            b.availableStatus !== 'Dipesan'
+          ) {
+            return -1; // a (Dipesan) dianggap lebih kecil dari b (Bukan Dipesan)
+          } else if (
+            a.availableStatus !== 'Dipesan' &&
+            b.availableStatus === 'Dipesan'
+          ) {
+            return 1; // a (Bukan Dipesan) dianggap lebih besar dari b (Dipesan)
           }
           return 0;
         });
