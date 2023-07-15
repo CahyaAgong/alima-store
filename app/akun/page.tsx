@@ -70,15 +70,15 @@ const Akun = () => {
   const submitForm = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmiting(true);
-    if (formValues.confirmation_password !== formValues.password) {
-      showAlert(
-        'Pehatian',
-        'Password yang anda masukkan tidak sama',
-        'warning'
-      );
-      setSubmiting(false);
-      return;
-    }
+    // if (formValues.confirmation_password !== formValues.password) {
+    //   showAlert(
+    //     'Pehatian',
+    //     'Password yang anda masukkan tidak sama',
+    //     'warning'
+    //   );
+    //   setSubmiting(false);
+    //   return;
+    // }
     try {
       if (formValues.password) {
         const { result, error } = await updateUser(formValues);
@@ -109,9 +109,9 @@ const Akun = () => {
   }, []);
 
   return (
-    <div className='flex flex-col items-center w-full h-screen'>
-      <div className='mt-40 2xl:mt-44 px-[50px] 2xl:px-[100px] pb-20 w-full max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl 2xl:max-w-screen-2xl'>
-        <div className='flex flex-row flex-wrap w-full h-full space-x-3'>
+    <div className='flex flex-col justify-center items-center w-full h-screen'>
+      <div className='mt-40 2xl:mt-44 px-[50px] 2xl:px-[100px] pb-20 flex justify-center items-center h-full w-full max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl 2xl:max-w-screen-2xl'>
+        <div className='flex flex-col w-full lg:flex-row w-full h-[321px] space-x-0 lg:space-x-10 space-y-3 lg:space-y-0'>
           {isFetching ? (
             <Loading />
           ) : users.length > 0 ? (
@@ -187,7 +187,7 @@ const Akun = () => {
                     required
                   />
                 </div>
-                <div className='mt-5 flex flex-col space-y-3'>
+                <div className='mt-5 flex flex-col space-y-3 hidden'>
                   <label
                     htmlFor='confirmation_password'
                     className='text-base text-black font-bold'
@@ -200,7 +200,6 @@ const Akun = () => {
                     className='outline-none w-full border border-[#5C25E7] rounded-lg px-3 py-2 text-sm text-black'
                     value={formValues.confirmation_password}
                     onChange={handleChange}
-                    required
                   />
                 </div>
                 <Button

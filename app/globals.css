@@ -49,6 +49,9 @@ body {
 }
 
 .AccountCard {
-  background: linear-gradient(134deg, #f0653a 0%, #af95ef 50.18%, #f0d33a 100%);
-  @apply flex flex-row justify-center items-center px-8 py-10 text-white rounded-lg space-x-3;
+  @apply flex flex-row w-full lg:w-1/2 h-full justify-between items-center px-8 py-10 text-white rounded-lg space-x-3;
+}
+
+.Asterisk {
+  @apply outline-none border-none bg-transparent text-white focus:outline-none focus:border-none focus:bg-transparent w-[60%] p-0 text-3xl;
 }
