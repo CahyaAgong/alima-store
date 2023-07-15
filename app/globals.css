@@ -49,7 +49,7 @@ body {
 }
 
 .AccountCard {
-  @apply flex flex-row w-full lg:w-1/2 h-full justify-between items-center px-8 py-10 text-white rounded-lg space-x-3;
+  @apply flex flex-row w-full lg:w-1/2 h-full justify-between items-center px-8 py-10 text-white rounded-lg space-x-3 shadow-lg;
 }
 
 .Asterisk {

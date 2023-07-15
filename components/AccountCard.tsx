@@ -27,7 +27,7 @@ const AccountCard = ({ user, handleClick }: AccountCardProps) => {
         <div className='mt-auto pt-5 flex flex-col space-y-1'>
           <h2 className='text-lg font-semibold'>{user?.username ?? ''}</h2>
           <span className='text-base font-light'>PASSWORD</span>
-          <div className='flex flex-row space-x-2'>
+          <div className='flex flex-row items-center space-x-2'>
             <input
               type={isVisible === user.uid ? 'text' : 'password'}
               value={user.password}

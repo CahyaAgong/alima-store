@@ -76,11 +76,10 @@ export const loginWithEmailAndPassword = async (
     // Cari pengguna berdasarkan username dan password
     const userQuery = query(
       collection(db, 'users'),
-      where('email', '==', username + `@mail.com`),
+      where('username', '==', username.trim()),
       where('password', '==', password)
     );
     const querySnapshot = await getDocs(userQuery);
-
     if (querySnapshot.empty) {
       throw new Error('Username atau password salah');
     }
