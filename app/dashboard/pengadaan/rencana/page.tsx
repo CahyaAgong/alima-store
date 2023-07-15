@@ -112,7 +112,7 @@ export default function RencanaPengadaan() {
         await handleAddProcurement();
       }
     } catch (error) {
-      console.log(`Error : ${error}`);
+      console.error(`Error : ${error}`);
     } finally {
       setLoading(false);
       handleCloseModal();

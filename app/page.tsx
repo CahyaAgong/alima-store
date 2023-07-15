@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Authentication } from '@/actions/auth';
+import { Authentication, loginWithEmailAndPassword } from '@/actions/auth';
 import { useAuthContext } from '@/context/AuthContext';
 import { Button } from '@/components';
 import { showAlert } from '@/components/SweetAlert';
@@ -9,7 +9,7 @@ import { setCookie } from '@/actions/cookie';
 import Image from 'next/image';
 
 export default function Home() {
-  const { userLogin, setUserLogin } = useAuthContext();
+  const { setUserLogin } = useAuthContext();
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -21,18 +21,37 @@ export default function Home() {
     type: string
   ) => {
     event.preventDefault();
-    setLoading(true);
-    const { result, error } = await Authentication(email, password, type);
-    if (error) {
-      showAlert('Error', error, 'error');
-      setLoading(false);
-      return;
-    }
+    // setLoading(true);
+    // const { result, error } = await Authentication(email, password, type);
+    // if (error) {
+    //   showAlert('Error', error, 'error');
+    //   setLoading(false);
+    //   return;
+    // }
 
-    await setCookie('userSession', result.data, { expires: 1 });
-    showAlert(result.status, result.message, 'success');
-    setUserLogin(result.data);
-    setLoading(false);
+    // await setCookie('userSession', result.data, { expires: 1 });
+    // showAlert(result.status, result.message, 'success');
+    // setUserLogin(result.data);
+    // setLoading(false);
+
+    try {
+      setLoading(true);
+      const { result, error } = await loginWithEmailAndPassword(
+        email,
+        password
+      );
+      if (error) {
+        showAlert('Error', error, 'error');
+        return;
+      }
+      showAlert('Sukses', result.message, 'success');
+      await setCookie('userSession', result.data, { expires: 1 });
+      setUserLogin(result.data);
+    } catch (error: any) {
+      showAlert('Terjadi kesalahan', error, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

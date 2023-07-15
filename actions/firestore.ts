@@ -35,8 +35,13 @@ import {
 } from '@/types';
 import { LEAD_TIME_AVG, LEAD_TIME_MAX } from '@/constant/numbers';
 
-const db = getFirestore(firebaseConfig);
+import { getAuth, updatePassword } from 'firebase/auth';
 
+import { getCookie, setCookie } from '@/actions/cookie';
+
+export const db = getFirestore(firebaseConfig);
+
+const userCollection = 'users';
 const obatCollection = 'obat';
 const penjualanCollection = 'penjualan';
 const pengadaanCollection = 'pengadaan';
@@ -71,6 +76,7 @@ export const getUserLogged = async (collection: string, id: string) => {
         role: currentUser.role,
         uid: currentUser.uid,
         username: currentUser.username,
+        password: currentUser.password,
       };
     } else {
       userLogged = null;
@@ -80,6 +86,86 @@ export const getUserLogged = async (collection: string, id: string) => {
   }
 
   return { userLogged, error };
+};
+
+export const getUsers = async () => {
+  let result: User[] = [],
+    error: any = null;
+  let usersRef = query(collection(db, userCollection));
+
+  try {
+    let res = await getDocs(usersRef);
+    for (const doc of res.docs) {
+      const user = doc.data() as User;
+
+      const userData: User = {
+        uid: user.uid,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        password: user.password,
+      };
+      result.push(userData);
+    }
+    result.sort((a, b) => {
+      return a.role - b.role;
+    });
+  } catch (err) {
+    error = err;
+    return error;
+  }
+
+  return { result, error };
+};
+
+export const updateUser = async (data: User) => {
+  let result: resultRequest | null = null,
+    error: any = null;
+
+  try {
+    // const auth = getAuth();
+    // const user = auth.currentUser;
+
+    const user = await getCookie('userSession');
+
+    const userRef = doc(db, userCollection, data.uid);
+
+    if (user && data.password) {
+      // await updatePassword(user, data.password);
+
+      updateDoc(userRef, {
+        username: data.username,
+        password: data.password,
+      }).then(() => {
+        if (user.uid === data.uid) {
+          updateUsernameInCookie(data.username);
+        }
+      });
+    }
+
+    result = {
+      code: 200,
+      message: 'Data berhasil diubah',
+      status: 'Sukses',
+    };
+  } catch (err) {
+    error = err;
+  } finally {
+    return { result, error };
+  }
+};
+
+const updateUsernameInCookie = async (newUsername: string) => {
+  // Mendapatkan nilai user dari cookie
+  const user = await getCookie('userSession');
+
+  // Memperbarui data username
+  if (user) {
+    const updatedUser = { ...user, username: newUsername };
+
+    // Mengupdate data user di cookie
+    await setCookie('userSession', updatedUser);
+  }
 };
 
 export const getDashboardData = async (

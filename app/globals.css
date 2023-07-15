@@ -47,3 +47,8 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+.AccountCard {
+  background: linear-gradient(134deg, #f0653a 0%, #af95ef 50.18%, #f0d33a 100%);
+  @apply flex flex-row justify-center items-center px-8 py-10 text-white rounded-lg space-x-3;
+}

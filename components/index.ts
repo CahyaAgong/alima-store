@@ -9,6 +9,7 @@ import Medicine from './Medicine';
 import FileUploader from './FileUploader';
 import PdfContent from './PdfContent';
 import Loading from './Loading';
+import AccountCard from './AccountCard';
 
 export {
   Navbar,
@@ -22,4 +23,5 @@ export {
   FileUploader,
   PdfContent,
   Loading,
+  AccountCard,
 };

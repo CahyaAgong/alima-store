@@ -5,8 +5,10 @@ import {
   signOut,
   getAuth,
 } from 'firebase/auth';
-import { addUser, getUserLogged } from './firestore';
-import { resultRequest } from '@/types';
+import { addUser, db, getUserLogged } from './firestore';
+import { User, resultRequest } from '@/types';
+import { query, collection, where, getDocs } from 'firebase/firestore';
+
 const auth = getAuth(firebaseApp);
 
 export async function Authentication(
@@ -62,3 +64,41 @@ export async function LogOut() {
   }
   return { result, error };
 }
+
+export const loginWithEmailAndPassword = async (
+  username: string,
+  password: string
+) => {
+  let result: resultRequest | null = null;
+  let error: any = null;
+
+  try {
+    // Cari pengguna berdasarkan username dan password
+    const userQuery = query(
+      collection(db, 'users'),
+      where('email', '==', username + `@mail.com`),
+      where('password', '==', password)
+    );
+    const querySnapshot = await getDocs(userQuery);
+
+    if (querySnapshot.empty) {
+      throw new Error('Username atau password salah');
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data() as User;
+
+    const currentUser = await getUserLogged('users', userData.uid);
+    result = {
+      code: 200,
+      message: `Berhasil masuk, selamat datang ${currentUser.userLogged?.username}`,
+      status: 'Sukses',
+      data: currentUser.userLogged,
+    };
+  } catch (err) {
+    error = err;
+    throw error;
+  }
+
+  return { result, error };
+};

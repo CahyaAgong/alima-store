@@ -49,8 +49,18 @@ export default function Navbar({ handleClick }: NavbarProps) {
       countLimitedStock();
     });
 
+    const unsubscribeUser = subscribeToCollectionChanges(
+      'users',
+      updatedData => {
+        setInterval(() => {
+          getUserSession();
+        }, 500);
+      }
+    );
+
     return () => {
       unsubscribeFromCollectionChanges(unsubscribe);
+      unsubscribeFromCollectionChanges(unsubscribeUser);
     };
   }, []);
 
@@ -87,15 +97,24 @@ export default function Navbar({ handleClick }: NavbarProps) {
             )}
           </li>
           {currentUser?.role === 1 && (
-            <li
-              className={
-                pathName.includes('/dashboard/obat')
-                  ? 'font-bold'
-                  : 'font-normal'
-              }
-            >
-              <Link href='/dashboard/obat'>Obat</Link>
-            </li>
+            <>
+              <li
+                className={
+                  pathName.includes('/dashboard/obat')
+                    ? 'font-bold'
+                    : 'font-normal'
+                }
+              >
+                <Link href='/dashboard/obat'>Obat</Link>
+              </li>
+              <li
+                className={
+                  pathName.includes('/akun') ? 'font-bold' : 'font-normal'
+                }
+              >
+                <Link href='/akun'>Akun</Link>
+              </li>
+            </>
           )}
         </ul>
       </div>
@@ -119,13 +138,14 @@ export default function Navbar({ handleClick }: NavbarProps) {
           }`}
         >
           <ul className='w-full'>
-            <li className='cursor-pointer py-1 font-medium text-lg hover:bg-gray-300 hover:text-white'>
+            <li className='hidden cursor-pointer py-1 font-medium text-lg hover:bg-gray-300 hover:text-white'>
               <span className='px-4'>Setting</span>
             </li>
-            <li className='cursor-pointer py-1 font-medium text-lg hover:bg-gray-300 hover:text-white'>
-              <span className='px-4' onClick={handleClick}>
-                Logout
-              </span>
+            <li
+              className='cursor-pointer py-1 font-medium text-lg hover:bg-gray-300 hover:text-white'
+              onClick={handleClick}
+            >
+              <span className='px-4'>Logout</span>
             </li>
           </ul>
         </div>

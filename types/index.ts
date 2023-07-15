@@ -1,11 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
-import React, { MouseEventHandler } from 'react';
+import React, { MouseEventHandler, ReactNode } from 'react';
 
 export interface User {
   email: string;
   role: number;
   uid: string;
   username: string;
+  password?: string;
+  confirmation_password?: string;
 }
 
 export interface ContextProviderProps {
@@ -122,4 +124,10 @@ export interface FileUploaderProps {
   label?: string;
   onChange: (file: File | null) => void;
   isRequired?: boolean;
+}
+
+export interface AccountCardProps {
+  user: User;
+  handleClick: MouseEventHandler<HTMLButtonElement>;
+  children?: React.ReactNode;
 }

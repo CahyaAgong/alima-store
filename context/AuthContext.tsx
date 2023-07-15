@@ -38,14 +38,14 @@ export const AuthContextProvider: React.FC<ContextProviderProps> = ({
   const [loading, setLoading] = React.useState<boolean>(true);
 
   const handleLogout = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       setUserLogin(undefined);
       removeCookie('userSession');
     } catch (error) {
       console.error('Error logging out:', error);
     } finally {
-      await LogOut();
+      // await LogOut();
       setLoading(false);
     }
   };
