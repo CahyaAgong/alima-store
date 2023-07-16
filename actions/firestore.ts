@@ -205,9 +205,17 @@ export const getMedicines = async (
     error: Error | any = null;
 
   const previousMonth = new Date().getMonth() - 1;
+  const previousYear =
+    new Date().getFullYear() - (previousMonth === -1 ? 1 : 0);
 
-  const avgSales = await getAverageDailySalesByMedicine(6);
-  const highestSales = await getHighestDailySalesByMedicine(6);
+  const avgSales = await getAverageDailySalesByMedicine(
+    previousMonth,
+    previousYear
+  );
+  const highestSales = await getHighestDailySalesByMedicine(
+    previousMonth,
+    previousYear
+  );
 
   let documentRef = query(collection(db, collectionName));
   try {
@@ -526,7 +534,7 @@ export const createPenjualan = async (carts: Carts[]) => {
   return { result, error };
 };
 
-const getHighestDailySalesByMedicine = async (month: number) => {
+const getHighestDailySalesByMedicine = async (month: number, year: number) => {
   const startDate = new Date(2023, month, 1); // Mulai dari tanggal awal bulan
   const endDate = new Date(2023, month + 1, 0); // Sampai tanggal terakhir bulan
 
@@ -578,9 +586,9 @@ const getHighestDailySalesByMedicine = async (month: number) => {
   // return totalSalesByMedicine;
 };
 
-const getAverageDailySalesByMedicine = async (month: number) => {
-  const startDate = new Date(2023, month, 1); // Mulai dari tanggal awal bulan
-  const endDate = new Date(2023, month + 1, 0); // Sampai tanggal terakhir bulan
+const getAverageDailySalesByMedicine = async (month: number, year: number) => {
+  const startDate = new Date(year, month, 1); // Mulai dari tanggal awal bulan
+  const endDate = new Date(year, month + 1, 0); // Sampai tanggal terakhir bulan
 
   const penjualanRef = collection(db, 'penjualan');
   const q = query(

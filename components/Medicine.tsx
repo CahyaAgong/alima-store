@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { Medicine, Carts } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { formatCurrency } from '@/utils/helper';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 
 const Medicine = ({
   id,
@@ -66,13 +66,21 @@ const Medicine = ({
       inputVal <= stock
     ) {
       setTotalMedicine(inputVal);
-      if (existingMedicine && inputVal === 0) removeFromCart(existingMedicine);
-      if (existingMedicine) updateQuantity(existingMedicine, inputVal);
-      if (inputVal > 0)
+      if (existingMedicine && inputVal === 0) {
+        removeFromCart(existingMedicine);
+        return;
+      }
+      if (existingMedicine) {
+        updateQuantity(existingMedicine, inputVal);
+        return;
+      }
+      if (inputVal > 0) {
         addToCart({
           MedicineInCart: { id, medicine_name, price, stock, image, noBPOM },
           totalMedicine: inputVal,
         });
+        return;
+      }
     } else {
       if (existingMedicine) removeFromCart(existingMedicine);
       setTotalMedicine(0);
@@ -83,6 +91,13 @@ const Medicine = ({
       }, 2000); // Ubah sesuai kebutuhan Anda
     }
   };
+
+  useEffect(() => {
+    if (cart.length < 1) {
+      console.log('kereset ?');
+      setTotalMedicine(0);
+    }
+  }, [cart]);
 
   return (
     <div className='flex flex-row justify-center items-center border-b border-b-gray-300 mb-3 w-full px-9 py-7 space-x-3'>
@@ -95,7 +110,7 @@ const Medicine = ({
         />
       </div>
 
-      <div className='flex flex-row justify-between items-center text-black w-[80%]'>
+      <div className='flex flex-row justify-between items-center text-black w-[65%] xl:w-[72%]'>
         <div className='flex flex-col'>
           <h3 className='font-medium'>{medicine_name}</h3>
           <span
@@ -119,7 +134,7 @@ const Medicine = ({
         </div>
       </div>
 
-      <div className='flex flex-row w-[15%] justify-center items-center space-x-5'>
+      <div className='flex flex-row w-[27%] xl:w-[20%] justify-center items-center space-x-5'>
         <button
           type='button'
           className='p-2 border border-[#5C25E7] cursor-pointer rounded-md'
