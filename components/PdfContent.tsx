@@ -4,6 +4,11 @@ import { Document, Page, Text, StyleSheet, View } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
 const styles = StyleSheet.create({
+  body: {
+    paddingTop: 35,
+    paddingBottom: 65,
+    paddingHorizontal: 35,
+  },
   title: {
     marginTop: 32,
     fontSize: '32px',
@@ -85,7 +90,7 @@ const PdfContent = ({
   return (
     <Document>
       {type === 'PNJ' && (
-        <Page size='A4'>
+        <Page size='A4' style={styles.body}>
           <Text style={styles.title}>REKAP PENJUALAN</Text>
           <Text style={styles.subtitle}>
             {format(startDate, 'dd MMMM yyyy')} -{' '}
@@ -138,7 +143,7 @@ const PdfContent = ({
       )}
 
       {type === 'PNGDN' && (
-        <Page size='A4'>
+        <Page size='A4' style={styles.body}>
           <Text style={styles.title}>REKAP PENGADAAN</Text>
           <Text style={styles.subtitle}>
             {format(startDate, 'dd MMMM yyyy')} -{' '}
@@ -170,6 +175,13 @@ const PdfContent = ({
               <Text style={styles.title}>Tidak ada Data</Text>
             )}
           </View>
+          <Text
+            style={styles.pageNumbers}
+            render={({ pageNumber, totalPages }) =>
+              `${pageNumber} / ${totalPages}`
+            }
+            fixed
+          />
         </Page>
       )}
     </Document>
