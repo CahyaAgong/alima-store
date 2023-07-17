@@ -31,7 +31,8 @@ export default function TransaksiPengadaan() {
   const [startSelectedDate, setStartSelectedDate] = useState<Date>(new Date());
   const [endSelectedDate, setEndSelectedDate] = useState<Date>(new Date());
   const [procurementId, setProcurementId] = useState<string>('');
-  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState<boolean>(false);
+  const [isPrint, setPrint] = useState<boolean>(false);
   const [formSubmit, setFormSubmit] = useState<{
     date: Date;
     medicine_id: string;
@@ -111,19 +112,26 @@ export default function TransaksiPengadaan() {
   };
 
   const handlePrint = async (item: ProcurementData[]) => {
-    const blob = await pdf(
-      <PdfContent
-        data={item}
-        type='PNGDN'
-        startDate={startSelectedDate}
-        endDate={endSelectedDate}
-      />
-    ).toBlob();
-    const fileName = `Report Pengadaan - ${format(
-      startSelectedDate,
-      'dd MMMM yyyy'
-    )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
-    FileSaver.saveAs(blob, fileName);
+    try {
+      setPrint(true);
+      const blob = await pdf(
+        <PdfContent
+          data={item}
+          type='PNGDN'
+          startDate={startSelectedDate}
+          endDate={endSelectedDate}
+        />
+      ).toBlob();
+      const fileName = `Report Pengadaan - ${format(
+        startSelectedDate,
+        'dd MMMM yyyy'
+      )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
+      FileSaver.saveAs(blob, fileName);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setPrint(false);
+    }
   };
 
   const handleButtonClick = () => {
@@ -194,7 +202,8 @@ export default function TransaksiPengadaan() {
                 onChange={handleEndDateChange}
               />
               <Button
-                title={`Print`}
+                title={isPrint ? `Loading...` : `Print`}
+                isDisabled={isPrint}
                 containerStyles='px-3 py-1 rounded-lg bg-[#5C25E7] text-white'
                 handleClick={() => handlePrint(procurementData)}
               />

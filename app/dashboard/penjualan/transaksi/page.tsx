@@ -27,6 +27,7 @@ const TransaksiPenjualan = () => {
 
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [salesDetail, setSalesDetail] = useState<SalesData | null>(null);
+  const [isPrint, setPrint] = useState<boolean>(false);
 
   const handleStartDateChange = (date: Date) => {
     setStartSelectedDate(date);
@@ -47,19 +48,26 @@ const TransaksiPenjualan = () => {
   };
 
   const handlePrint = async (item: SalesData[]) => {
-    const blob = await pdf(
-      <PdfContent
-        data={item}
-        type='PNJ'
-        startDate={startSelectedDate}
-        endDate={endSelectedDate}
-      />
-    ).toBlob();
-    const fileName = `Report Penjualan - ${format(
-      startSelectedDate,
-      'dd MMMM yyyy'
-    )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
-    FileSaver.saveAs(blob, fileName);
+    try {
+      setPrint(true);
+      const blob = await pdf(
+        <PdfContent
+          data={item}
+          type='PNJ'
+          startDate={startSelectedDate}
+          endDate={endSelectedDate}
+        />
+      ).toBlob();
+      const fileName = `Report Penjualan - ${format(
+        startSelectedDate,
+        'dd MMMM yyyy'
+      )} - ${format(endSelectedDate, 'dd MMMM yyyy')}`;
+      FileSaver.saveAs(blob, fileName);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setPrint(false);
+    }
   };
 
   useEffect(() => {
@@ -106,7 +114,8 @@ const TransaksiPenjualan = () => {
                 onChange={handleEndDateChange}
               />
               <Button
-                title={`Print`}
+                title={isPrint ? `Loading...` : `Print`}
+                isDisabled={isPrint}
                 containerStyles='px-3 py-1 rounded-lg bg-[#5C25E7] text-white'
                 handleClick={() => handlePrint(salesData)}
               />

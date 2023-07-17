@@ -94,7 +94,6 @@ const Medicine = ({
 
   useEffect(() => {
     if (cart.length < 1) {
-      console.log('kereset ?');
       setTotalMedicine(0);
     }
   }, [cart]);

@@ -1,24 +1,54 @@
+import { useState } from 'react';
+
 import { ProcurementData, SalesData } from '@/types';
 import { formatCurrency } from '@/utils/helper';
-import { Document, Page, Text, StyleSheet, View } from '@react-pdf/renderer';
+import {
+  Document,
+  Page,
+  Text,
+  StyleSheet,
+  View,
+  Font,
+} from '@react-pdf/renderer';
 import { format } from 'date-fns';
+
+Font.register({
+  family: 'Noto-Sans-Thai-Looped',
+  fonts: [
+    {
+      src: '/font/Noto_Sans_Thai_Looped/NotoSansThaiLooped-Light.ttf',
+      fontStyle: 'normal',
+      fontWeight: 'light',
+    },
+    {
+      src: '/font/Noto_Sans_Thai_Looped/NotoSansThaiLooped-Regular.ttf',
+      fontStyle: 'normal',
+    },
+    {
+      src: '/font/Noto_Sans_Thai_Looped/NotoSansThaiLooped-Bold.ttf',
+      fontStyle: 'normal',
+      fontWeight: 'bold',
+    },
+  ],
+});
 
 const styles = StyleSheet.create({
   body: {
     paddingTop: 15,
     paddingBottom: 65,
     paddingHorizontal: 35,
+    fontFamily: 'Noto-Sans-Thai-Looped',
   },
   title: {
     marginTop: 20,
     fontSize: '32px',
-    fontWeight: 800,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
   subtitle: {
     marginTop: 5,
     fontSize: '15px',
-    fontWeight: 800,
+    fontWeight: 'normal',
     textAlign: 'center',
   },
   table: {
@@ -27,7 +57,6 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 32,
   },
-
   column: {
     width: '25%',
     textAlign: 'center',
@@ -37,9 +66,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     width: '100%',
+    marginBottom: 5,
 
-    fontWeight: 800,
-    fontSize: '14px',
+    fontWeight: 'bold',
+    fontSize: '13px',
   },
   tbodyRow: {
     display: 'flex',
@@ -47,10 +77,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     width: '100%',
     borderBottom: '0.5px solid #000',
-    paddingVertical: 10,
+    paddingBottom: 10,
+    paddingTop: 5,
 
     fontSize: '10px',
-    fontWeight: 400,
+    fontWeight: 'normal',
   },
   thDetailOrder: {
     width: '25%',
@@ -63,15 +94,19 @@ const styles = StyleSheet.create({
     fontSize: '10px',
     textAlign: 'left',
   },
-
+  titleNoFound: {
+    fontSize: '14px',
+    fontWeight: 'normal',
+    textAlign: 'center',
+  },
   pageNumbers: {
     position: 'absolute',
     bottom: 20,
     left: 0,
     right: 0,
     textAlign: 'center',
-    fontSize: '12px',
-    fontWeight: 600,
+    fontSize: '10px',
+    fontWeight: 'light',
   },
 });
 
@@ -97,7 +132,7 @@ const PdfContent = ({
           </Text>
           <View style={styles.table}>
             {/* Table header */}
-            <View style={styles.thRow}>
+            <View style={styles.thRow} fixed>
               <Text style={styles.column}>Tanggal</Text>
               <Text style={styles.column}>Id Order</Text>
               <Text style={styles.thDetailOrder}>Detail Order</Text>
@@ -128,7 +163,7 @@ const PdfContent = ({
                 </View>
               ))
             ) : (
-              <Text style={styles.title}>Tidak ada Data</Text>
+              <Text style={styles.titleNoFound}>Tidak ada Data</Text>
             )}
           </View>
           <Text
@@ -150,7 +185,7 @@ const PdfContent = ({
           </Text>
           <View style={styles.table}>
             {/* Table header */}
-            <View style={styles.thRow}>
+            <View style={styles.thRow} fixed>
               <Text style={styles.column}>Tanggal</Text>
               <Text style={styles.column}>Nama Obat</Text>
               <Text style={styles.column}>Qty</Text>
@@ -171,7 +206,7 @@ const PdfContent = ({
                 </View>
               ))
             ) : (
-              <Text style={styles.title}>Tidak ada Data</Text>
+              <Text style={styles.titleNoFound}>Tidak ada Data</Text>
             )}
           </View>
           <Text
