@@ -5,12 +5,12 @@ import { format } from 'date-fns';
 
 const styles = StyleSheet.create({
   body: {
-    paddingTop: 35,
+    paddingTop: 15,
     paddingBottom: 65,
     paddingHorizontal: 35,
   },
   title: {
-    marginTop: 32,
+    marginTop: 20,
     fontSize: '32px',
     fontWeight: 800,
     textAlign: 'center',
@@ -25,8 +25,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    marginTop: 20,
-    paddingHorizontal: 30,
+    marginTop: 32,
   },
 
   column: {
