@@ -48,7 +48,13 @@ const Medicine = ({
       if (existingMedicine.totalMedicine >= stock) return;
       increaseQuantity(existingMedicine);
     } else {
-      if (stock === 0) return;
+      if (stock === 0) {
+        setIsInputExceeded(true); // Set status melebihi inputan
+        setTimeout(() => {
+          setIsInputExceeded(false); // Set status kembali normal setelah beberapa waktu
+        }, 2000); // Ubah sesuai kebutuhan Anda
+        return;
+      }
       addToCart({
         MedicineInCart: { id, medicine_name, price, stock, image, noBPOM },
         totalMedicine: totalMedicine + 1,
